@@ -1,3 +1,4 @@
 {
-    "gameEnv" : "AtariEnv"
+    "gameEnv" : "gameEnv.AtariEnv",
+	"agent" : ""
 }

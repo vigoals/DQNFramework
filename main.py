@@ -27,7 +27,8 @@
 # 		print "terminal"
 
 from optionParser import OptionParser
-from playGame import PlayGame
+import players
 
 opt = OptionParser()
-pg = PlayGame(opt)
+pg = players.ExplorePlayer(opt)
+pg.run(1000)

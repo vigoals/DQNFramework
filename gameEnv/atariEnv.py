@@ -46,7 +46,10 @@ class AtariEnv(Env):
 			observation, reward, terminal, info = self.game.step(action)
 			rewardSum += reward
 			# atari游戏判断是否存活
-			lives = info.has_key('ale.lives') and info['ale.lives'] or None
+			if info.has_key('ale.lives'):
+				lives = info['ale.lives']
+			else:
+				lives = None
 			if training and lives and lives < self.lives:
 				terminal = True
 
@@ -74,11 +77,12 @@ class AtariEnv(Env):
 		if not training:
 			observation, reward, terminal = self.newGame()
 		else:
-			while not terminal:
-				observation, reward, terminal, info = self.game.step(0)
-				lives = info.has_key('ale.lives') and info['ale.lives'] or None
-				if training and lives and lives < self.lives:
-					break
+			observation, reward, terminal, info = self.game.step(0)
+			# while not terminal:
+			# 	observation, reward, terminal, info = self.game.step(0)
+			# 	lives = info.has_key('ale.lives') and info['ale.lives'] or None
+			# 	if training and lives and lives < self.lives:
+			# 		break
 			if terminal:
 				self.game.reset()
 
