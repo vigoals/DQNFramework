@@ -1,4 +1,18 @@
 {
     "gameEnv" : "gameEnv.AtariEnv",
-	"agent" : ""
+	"agent" : "",
+	"network" : [
+		{"type":"placeholder", "size":[null, 10]},
+		{"type":"linear", "input":10, "output":10},
+		{"type":"output", "size":[null, 10]},
+		{"type":"loss", "ltype":"MSELoss"},
+		{
+			"type" : "optimizer",
+			"oType" : "AdamOptimizer",
+			"learningrate" : 0.0025,
+			"beta1" : 0.95,
+			"beta2" : 0.95,
+			"epsilon" : 0.01
+		}
+	]
 }
