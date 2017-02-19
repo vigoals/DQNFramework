@@ -31,6 +31,3 @@ import players
 import tfPack as tfp
 
 opt = OptionParser()
-# pg = players.ExplorePlayer(opt)
-# pg.run(1000)
-net = tfp.Network(opt.get('network'))

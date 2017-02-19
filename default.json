@@ -1,4 +1,5 @@
 {
+    "device" : "/gpu:0",
     "gameEnv" : "gameEnv.AtariEnv",
 	"agent" : "",
 	"network" : [

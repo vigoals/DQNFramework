@@ -9,10 +9,7 @@ class Player(object):
 		self.actrep = opt.get('actrep', 4)
 		self.randomStarts = opt.get('randomStarts', 30)
 		self.gameEnv = Env(self.env, self.actrep, self.randomStarts)
-		self.nActions = self.gameEnv.getActionSpace()
-		self.width = opt.get('width', 84)
-		self.heigth = opt.get('heigth', 84)
-		self.histLen = opt.get('histLen', 4)
+		self.nActions = opt.get('nActions', self.gameEnv.getActionSpace())
 
 		# run 所要用到的数据
 		self.observation = None
