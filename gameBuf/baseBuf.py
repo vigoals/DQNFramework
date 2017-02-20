@@ -13,7 +13,11 @@ class BaseBuf(object):
         self.nowEpisode = []
         self.episodes = [self.nowEpisode]
 
+	def statePreProcess(self, state):
+		return state.copy()
+
     def add(self, step, state, terminal):
+		state = self.statePreProcess(state)
         tmp = {"step":step, "state":state, "terminal":terminal}
         self.buf.append(tmp)
         self.nowEpisode(tmp)
@@ -34,5 +38,17 @@ class BaseBuf(object):
         tmp = self.buf[-1]
         tmp['reward'] = reward
 
-    def get(self, i):
-        return self.buf[i]
+	def getState(self, i):
+		assert i <= len(self.buf), '超出范围'
+		return self.buf[i]['state'].copy()
+
+	def getStateByStep(self, step):
+		i = step - self.buf[0]['step']
+		assert self.buf[i]['step'] == step, 'step 计数出错'
+		return getState(i)
+
+	def get(self, i):
+		return self.getState(i)
+
+	def getByStep(self, step):
+		pass
