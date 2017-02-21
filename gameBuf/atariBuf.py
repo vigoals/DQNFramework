@@ -3,20 +3,21 @@ from baseBuf import BaseBuf
 import copy
 import numpy as np
 
-class AtariBuf(object):
+class AtariBuf(BaseBuf):
 	"""docstring for AtariBuf"""
 	def __init__(self, opt):
-		self.histLen = opt.get('histLen', 4)
-		self.height = opt.get('height', 84)
-		self.width = opt.get('width', 84)
 		super(AtariBuf, self).__init__(opt)
+		self.histLen = opt.get('histLen', 4)
+		# self.height = opt.get('height', 84)
+		# self.width = opt.get('width', 84)
 
 	def statePreProcess(self, state):
+		state = state.reshape(-1)
 		return (state*255).astype(np.uint8)
 
-	def getState(i):
+	def getState(self, i):
 		assert i <= len(self.buf), '超出范围'
-		shape = self.buf[0]['state'].shape
+		shape = list(self.buf[0]['state'].shape)
 		shape[1:] = shape
 		shape[0] = self.histLen
 		state = np.zeros(shape)
@@ -28,4 +29,4 @@ class AtariBuf(object):
 			if k < 0 or self.buf[k]['terminal']:
 				break
 
-		return state
+		return state.reshape(-1)

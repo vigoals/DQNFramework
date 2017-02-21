@@ -15,8 +15,9 @@ class OptionParser:
 				)
 		(options, args) = parser.parse_args(sys.argv[1:])
 		self.options = options.__dict__
-		assert len(args) == 1, "usage:./main.py [optinos] env"
-		self.options['env'] = args[0]
+		# assert len(args) == 1, "usage:./main.py [optinos] env"
+		if len(args) > 0:
+			self.options['env'] = args[0]
 		if self.options['configure']:
 			self.load(self.options['configure'])
 			self.options['configure'] = None
@@ -40,6 +41,9 @@ class OptionParser:
 			return default
 		else:
 			return None
+
+	def set(self, key, value):
+		self.options[key] = value
 
 	def load(self, configure):
 		try:
