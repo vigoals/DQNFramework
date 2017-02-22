@@ -1,6 +1,7 @@
 #coding=utf-8
 
 import gameEnv
+import agents
 
 class Player(object):
 	def __init__(self, opt, agent=None):
@@ -9,7 +10,10 @@ class Player(object):
 		self.actrep = opt.get('actrep', 4)
 		self.randomStarts = opt.get('randomStarts', 30)
 		self.gameEnv = Env(self.env, self.actrep, self.randomStarts)
-		self.nActions = opt.get('nActions', self.gameEnv.getActionSpace())
+		self.nActions = opt.get('nActions', self.gameEnv.getActions())
+
+		exec('AGENT = ' + opt.get('agent'))
+		self.agent = agent or AGENT(opt)
 
 		# run 所要用到的数据
 		self.observation = None
@@ -20,6 +24,7 @@ class Player(object):
 		self.action = 0
 		self.episode_reward = 0
 		self.total_reward = 0
+		self.training = False
 
 	def run(self, max_steps=None, max_episode=None, training=True):
 		assert (max_steps is not  None) or (max_episode is not None), \
@@ -31,6 +36,7 @@ class Player(object):
 		self.total_reward = 0
 		self.observation, self.reward, self.terminal = self.gameEnv.newGame()
 		self.episode_reward = self.reward
+		self.training = training
 
 		self.onStartRun()
 

@@ -1,19 +1,12 @@
 {
-    "device" : "/gpu:0",
+    "device" : "/cpu:0",
     "gameEnv" : "gameEnv.AtariEnv",
-	"agent" : "",
-	"network" : [
-		{"type":"placeholder", "size":[null, 10]},
-		{"type":"linear", "input":10, "output":10},
-		{"type":"output", "size":[null, 10]},
-		{"type":"loss", "ltype":"MSELoss"},
-		{
-			"type" : "optimizer",
-			"oType" : "AdamOptimizer",
-			"learningrate" : 0.0025,
-			"beta1" : 0.95,
-			"beta2" : 0.95,
-			"epsilon" : 0.01
-		}
-	]
+	"agent" : "agents.AtariDQN",
+	"steps" : 1e7,
+	"bufSize" : 1e6,
+	"discount" : 0.99,
+	"learnStart" : 50000,
+	"trainFreq" : 4,
+	"targetFreq" : 10000,
+	"reportFreq" : 100
 }
