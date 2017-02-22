@@ -21,12 +21,6 @@ class Player(object):
 		self.episode_reward = 0
 		self.total_reward = 0
 
-	def preprocess(observation):
-		screen = Image.fromarray(observation)
-		screen = screen.convert('L')
-		screen = screen.resize((84, 84))
-		return screen
-
 	def run(self, max_steps=None, max_episode=None, training=True):
 		assert (max_steps is not  None) or (max_episode is not None), \
 				"游戏无法结束"

@@ -15,7 +15,8 @@ class AtariBuf(BaseBuf):
 		state = state.reshape(-1)
 		return (state*255).astype(np.uint8)
 
-	def getState(self, i):
+	def getState(self, i=None):
+		i = i or (len(self.buf) - 1)
 		assert i <= len(self.buf), '超出范围'
 		shape = list(self.buf[0]['state'].shape)
 		shape[1:] = shape

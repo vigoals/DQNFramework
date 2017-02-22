@@ -3,6 +3,7 @@ import tensorflow as tf
 from netComm import *
 from baseAgent import BaseAgent
 import numpy as np
+import gameBuf
 
 class AtariDQN(BaseAgent):
 	"""docstring for AtariDQN"""
@@ -19,8 +20,15 @@ class AtariDQN(BaseAgent):
 		self.clipDelta = opt.get('clipDelta', 1)
 		self.maxReward = opt.get('maxReward', 1)
 		self.minReward = opt.get('minReward', -self.maxReward)
+		self.learningRate = opt.get('learningRate', 0.0025)
+
+		self.gameBuf = gameBuf.AtariBuf(opt)
+		self.evalBuf = gameBuf.AtariBuf(opt)
+		self.evalBuf.reset(self.histLen*2)
+		self.step = None
 
 		self.QNetwork = self.createNetwork()
+		self.trainer = self.createTrainer()
 		if self.targetFreq > 0:
 			self.QTarget = self.createNetwork()
 			self.sess.run(tf.global_variables_initializer())
@@ -66,6 +74,38 @@ class AtariDQN(BaseAgent):
 
 		return {'net':net, 'inputPH':inputPH, 'paras':parameters}
 
+	def createTrainer(self):
+		targetsPH = None
+		actionPH = None
+		deltas = None
+		loss = None
+		optim = None
+
+		with tf.device(self.device):
+			targetsPH = tf.placeholder(tf.float32, [None])
+			actionPH = tf.placeholder(tf.int32, [None])
+
+			actionOneHot = tf.one_hot(actionPH, self.nActions, 1.0, 0.0)
+
+			q = tf.reduce_sum(self.QNetwork['net']*actionOneHot, 1)
+			deltas = targetsPH - q
+
+
+			# clip delta
+			if self.clipDelta:
+				deltasCliped = tf.clip_by_value(
+						deltas, -self.clipDelta, self.clipDelta)
+
+				loss = tf.reduce_mean(tf.square(deltas)/2 + deltas - deltasCliped)
+			else:
+				loss = tf.reduce_mean(tf.square(deltas)/2)
+
+			optim = tf.train.RMSPropOptimizer(
+					self.learningRate, 0.95, 0.95, 0.01).minimize(loss)
+
+		return {'targetsPH':targetsPH, 'actionPH':actionPH,
+				'deltas':deltas, 'optim':optim}
+
 	def q(self, state):
 		return self.sess.run(self.QNetwork['net'],
 				feed_dict={self.QNetwork['inputPH']:state})
@@ -83,5 +123,35 @@ class AtariDQN(BaseAgent):
 			action = np.argmax(q)
 			return action, q
 
-	def perceive(self, step, observation, reward, terminal):
+	def preprocess(observation):
+		screen = Image.fromarray(observation)
+		screen = screen.convert('L')
+		screen = screen.resize((84, 84))
+		return screen
+
+	def perceive(self, step, observation, reward, terminal, ep, eval_):
+		if not eval_ and step > 0:
+			r = max(min(reward, self.maxReward), self.minReward)
+			self.gameBuf.setReward(r)
+
+		screen = self.preprocess(observation)
+		state = None
+		if not eval_:
+			self.gameBuf.add(step, screen, terminal)
+			self.step = step
+			state = self.gameBuf.getState()
+		else:
+			self.evalBuf.add(step, screen, terminal)
+			state = self.evalBuf.getState()
+
+		action, q = self.policy(state, ep)
+
+		if not eval_:
+			self.gameBuf.setAction(action)
+
+			# train
+
+			# update target
+
+	def trainerRun():
 		pass

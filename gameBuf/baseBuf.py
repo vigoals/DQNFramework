@@ -40,7 +40,8 @@ class BaseBuf(object):
 		tmp = self.buf[-1]
 		tmp['reward'] = reward
 
-	def getState(self, i):
+	def getState(self, i=None):
+		i = i or (len(self.buf) - 1)
 		assert i <= len(self.buf), '超出范围'
 		return self.buf[i]['state'].copy()
 
@@ -49,7 +50,8 @@ class BaseBuf(object):
 		assert self.buf[i]['step'] == step, 'step 计数出错'
 		return self.getState(i)
 
-	def get(self, i):
+	def get(self, i=None):
+		i = i or (len(self.buf) - 1)
 		assert i < len(self.buf), '超出范围'
 		return self.buf[i]['step'], self.getState(i), self.buf[i]['action'], \
 				self.buf[i]['reward'], self.buf[i]['terminal']
