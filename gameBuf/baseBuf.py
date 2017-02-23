@@ -51,7 +51,7 @@ class BaseBuf(object):
 		return self.getState(i)
 
 	def get(self, i=None):
-		i = i if i is not None else (len(self.buf))
+		i = i if i is not None else -1
 		assert i < len(self.buf), '超出范围'
 		return self.buf[i]['step'], self.getState(i), self.buf[i]['action'], \
 				self.buf[i]['reward'], self.buf[i]['terminal']

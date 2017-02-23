@@ -7,6 +7,7 @@ import time
 import os
 
 print "Start at %s" % time.asctime()
+print "PID:%5d" % os.getpid()
 
 opt = OptionParser()
 savePath = opt.get('savePath', './save')

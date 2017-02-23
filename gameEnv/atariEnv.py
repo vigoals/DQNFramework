@@ -89,7 +89,8 @@ class AtariEnv(Env):
 		for i in range(k):
 			observation, reward, terminal, info = self.game.step(0)
 			if terminal:
-				print "WARNING: Terminal signal received after %d 0-steps" % (i+1)
+				# print "WARNING: Terminal signal received after %d 0-steps" % (i+1)
+				self.game.reset()
 				break
 
 		observation, reward, terminal, info = self.game.step(0)

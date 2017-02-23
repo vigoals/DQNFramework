@@ -169,7 +169,7 @@ class AtariDQN(BaseAgent):
 
 			# train
 			if step > self.learnStart and step%self.trainFreq == 0:
-				self.train
+				self.train()
 
 			# update target
 			if step > self.learnStart and step%self.targetFreq == 0:

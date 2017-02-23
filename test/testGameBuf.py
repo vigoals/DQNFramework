@@ -11,10 +11,15 @@ buf = gameBuf.AtariBuf(opt)
 
 
 for i in range(1000):
-	buf.add(i, np.random.random((4, 4)), False)
+	state = np.random.random((2, 2))
+	buf.add(i, state, False)
 	buf.setAction(np.random.randint(4))
 	buf.setReward(np.random.randint(2))
 
-buf.add(1000, np.random.random((4, 4)), True)
+state = np.empty((2, 2)).astype(np.float)
+state[()] = 1000.0/2000.0
+buf.add(1000, state, True)
 
-print buf.sample(5)
+print buf.buf[:10]
+print buf.get()
+print buf.get()
