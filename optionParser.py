@@ -60,8 +60,19 @@ class OptionParser:
 			for k in conf.keys():
 				if not self.options.has_key(k) or self.options[k] is None:
 					self.options[k] = conf[k]
+			f.close()
 		except IOError:
-			pass
+			print "WARNING: 载入 %s 出错" % configure
 
-	def save(self):
-		pass
+	def save(self, path):
+		path = path + '/opt.json'
+		try:
+			f = open(path, 'w')
+			f.write(str(self))
+			f.close()
+		except IOError:
+			print "WARNING: 保存opt到 %s 出错", path
+
+	def __str__(self):
+		return json.dumps(self.options, indent=4,
+				sort_keys=False, ensure_ascii=False)

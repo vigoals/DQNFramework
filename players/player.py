@@ -64,9 +64,9 @@ class Player(object):
 			self.onEndStep()
 
 			self.step += 1
-			if max_steps is not None and self.step > max_steps:
+			if max_steps is not None and self.step >= max_steps:
 				break
-			if max_episode is not None and self.episode > max_episode:
+			if max_episode is not None and self.episode >= max_episode:
 				break
 
 		self.endTime = time.time()

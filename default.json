@@ -21,6 +21,6 @@
 	"evalFreq" : 100,
 	"evalMaxEpisode" : 3,
 	"evalMaxSteps" : 125000,
-	"saveFreq" : 10000,
+	"saveFreq" : 100,
 	"savePath" : "./save"
 }

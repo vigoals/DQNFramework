@@ -5,6 +5,7 @@ from baseAgent import BaseAgent
 import numpy as np
 import gameBuf
 from PIL import Image
+import deepdish as dd
 
 class AtariDQN(BaseAgent):
 	"""docstring for AtariDQN"""
@@ -222,3 +223,19 @@ class AtariDQN(BaseAgent):
 			print 'deltas std:%10.6f' % deltas.std()
 			print 'Q mean:%10.6f' % q.mean()
 			print 'Q std:%10.6f' % q.std()
+
+	def save(self, path, tag=None):
+		if not tag:
+			path = path + '/agent.h5'
+		else:
+			path = path + '/agent-' + tag + '.h5'
+		paras = []
+		for i in range(len(self.QNetwork['paras'])):
+			tmp = self.QNetwork['paras'][i]
+			w = self.sess.run(tmp)
+			paras.append(w)
+
+		try:
+			dd.io.save(path, paras)
+		except IOError:
+			print 'WARNING: 保存agent到 %s 失败' % path

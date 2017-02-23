@@ -8,5 +8,8 @@ class BaseAgent(object):
     def perceive(self, step, observation, reward, terminal, ep, eval):
         pass
 
-    def train():
-        pass
+	def report(self):
+		pass
+		
+	def save(self, savePath):
+		pass

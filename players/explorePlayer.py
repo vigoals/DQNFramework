@@ -3,6 +3,7 @@
 from player import Player
 import time
 from evalPlayer import EvalPlayer
+import json
 
 class ExplorePlayer(Player):
 	"""用于学习过程探索游戏环境"""
@@ -19,6 +20,7 @@ class ExplorePlayer(Player):
 		self.evalPlayer = EvalPlayer(opt, self.agent)
 		self.saveFreq = opt.get('saveFreq', 10000)
 		self.savePath = opt.get('savePath', './save')
+		self.evalInfo = []
 
 	def onStartStep(self):
 		ep = 1
@@ -58,8 +60,20 @@ class ExplorePlayer(Player):
 				(info['runTime'], info['runStep'],
 				info['totalReward'], info['episode'], info['avgReward'])
 
+		self.evalInfo.append(info)
+
 	def save(self):
-		pass
+		self.agent.save(self.savePath)
+
+		path = self.savePath + '/evalInfo.json'
+		try:
+			str_ = json.dumps(self.evalInfo, indent=4,
+					sort_keys=False, ensure_ascii=False)
+			f = open(path, 'w')
+			f.write(str_)
+			f.close()
+		except IOError:
+			pass
 
 	def onEndStep(self):
 		if self.step%self.reportFreq == 0:
