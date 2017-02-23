@@ -29,6 +29,7 @@ class AtariDQN(BaseAgent):
 		self.trainFreq = opt.get('trainFreq', 4)
 		self.targetFreq = opt.get('targetFreq', 10000)
 		self.batchSize = opt.get('batchSize', 32)
+		self.evalBatchSize = opt.get('evalBatchSize', 1000)
 
 		self.gameBuf = gameBuf.AtariBuf(opt)
 		self.evalBuf = gameBuf.AtariBuf(opt)
@@ -118,7 +119,8 @@ class AtariDQN(BaseAgent):
 					self.learningRate, 0.95, 0.95, 0.01).minimize(loss)
 
 		return {'targetsPH':targetsPH, 'actionPH':actionPH,
-				'deltas':deltasCliped or deltas, 'optim':optim}
+				'deltas':deltasCliped if deltasCliped is not None else deltas,
+				'optim':optim}
 
 	def q(self, state):
 		return self.sess.run(self.QNetwork['net'],
@@ -133,7 +135,7 @@ class AtariDQN(BaseAgent):
 		if np.random.rand() <= ep:
 			return np.random.randint(self.nActions), 0
 		else:
-			q = self.q(state).reshape(-1)
+			q = self.q([state]).reshape(-1)
 			action = np.argmax(q)
 			return action, q
 
@@ -184,11 +186,11 @@ class AtariDQN(BaseAgent):
 		return np.abs(deltas).mean()
 
 	def computTargets(self, batch):
-		state = batchs['state']
-		action = batchs['action']
-		reward = batchs['reward']
-		terminal = batchs['terminal']
-		stateNext = batchs['stateNext']
+		state = batch['state']
+		action = batch['action']
+		reward = batch['reward']
+		terminal = batch['terminal']
+		stateNext = batch['stateNext']
 
 		q2 = self.tq(stateNext)
 		q2Max = q2.max(1)
@@ -196,8 +198,17 @@ class AtariDQN(BaseAgent):
 
 		return state, targets, action
 
-	def computTD(self):
-		pass
+	def computeDeltas(self):
+		batch = self.gameBuf.sample(self.evalBatchSize)
+		state, targets, action = self.computTargets(batch)
+
+		deltas, q = self.sess.run(
+				(self.trainer['deltas'], self.QNetwork['net']),
+				feed_dict={self.QNetwork['inputPH'] : state,
+				self.trainer['targetsPH'] : targets,
+				self.trainer['actionPH'] : action})
+
+		return deltas, q
 
 	def train(self):
 		batch = self.gameBuf.sample(self.batchSize)
@@ -205,4 +216,9 @@ class AtariDQN(BaseAgent):
 		self.trainerRun(state, targets, action)
 
 	def report(self):
-		pass
+		if len(self.gameBuf) > 1:
+			deltas, q = self.computeDeltas()
+			print 'TD:%10.6f' % np.abs(deltas).mean()
+			print 'deltas std:%10.6f' % deltas.std()
+			print 'Q mean:%10.6f' % q.mean()
+			print 'Q std:%10.6f' % q.std()

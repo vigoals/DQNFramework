@@ -6,12 +6,19 @@ import json
 class OptionParser:
 	def __init__(self):
 		parser = optparse.OptionParser(usage="usage:./main.py [optinos] env")
-		parser.add_option("-c", "--configure",
-				action = "store",
+		parser.add_option('-c', '--configure',
+				action = 'store',
 				type = 'string',
 				dest = "configure",
 				default = None,
 				help="配置文件"
+				)
+		parser.add_option('-s', '--savepath',
+				action = "store",
+				type = 'string',
+				dest = 'savePath',
+				default = None,
+				help = '保存路径'
 				)
 		(options, args) = parser.parse_args(sys.argv[1:])
 		self.options = options.__dict__
@@ -51,7 +58,7 @@ class OptionParser:
 			conf = json.load(f)
 			conf = self.byteify(conf)
 			for k in conf.keys():
-				if not self.options.has_key(k):
+				if not self.options.has_key(k) or self.options[k] is None:
 					self.options[k] = conf[k]
 		except IOError:
 			pass

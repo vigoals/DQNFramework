@@ -2,6 +2,7 @@
 
 import gameEnv
 import agents
+import time
 
 class Player(object):
 	def __init__(self, opt, agent=None):
@@ -13,7 +14,7 @@ class Player(object):
 		self.nActions = opt.get('nActions', self.gameEnv.getActions())
 
 		exec('AGENT = ' + opt.get('agent'))
-		self.agent = agent or AGENT(opt)
+		self.agent = agent if agent is not None else AGENT(opt)
 
 		# run 所要用到的数据
 		self.observation = None
@@ -22,9 +23,11 @@ class Player(object):
 		self.step = 0
 		self.episode = 0
 		self.action = 0
-		self.episode_reward = 0
-		self.total_reward = 0
+		self.episodeReward = 0
+		self.totalReward = 0
 		self.training = False
+		self.startTime = 0
+		self.endTime = 0
 
 	def run(self, max_steps=None, max_episode=None, training=True):
 		assert (max_steps is not  None) or (max_episode is not None), \
@@ -33,10 +36,11 @@ class Player(object):
 		self.step = 0
 		self.episode = 0
 		self.action = 0
-		self.total_reward = 0
+		self.totalReward = 0
 		self.observation, self.reward, self.terminal = self.gameEnv.newGame()
-		self.episode_reward = self.reward
+		self.episodeReward = self.reward
 		self.training = training
+		self.startTime = time.time()
 
 		self.onStartRun()
 
@@ -48,14 +52,14 @@ class Player(object):
 			if not self.terminal:
 				self.observation, self.reward, self.terminal = \
 						self.gameEnv.step(self.action, training)
-				self.episode_reward += self.reward
+				self.episodeReward += self.reward
 			else:
 				self.onEndEpisode()
 				self.observation, self.reward, self.terminal = \
 						self.gameEnv.nextRandomGame(training=True)
-				self.total_reward += self.episode_reward
+				self.totalReward += self.episodeReward
 				self.episode += 1
-				self.episode_reward = 0
+				self.episodeReward = 0
 
 			self.onEndStep()
 
@@ -64,6 +68,8 @@ class Player(object):
 				break
 			if max_episode is not None and self.episode > max_episode:
 				break
+
+		self.endTime = time.time()
 
 		self.onEndRun()
 
@@ -81,3 +87,12 @@ class Player(object):
 
 	def onEndEpisode(self):
 		pass
+
+	def getInfo(self):
+		return {
+			'runTime' : int(self.endTime - self.startTime),
+			'totalReward' : self.totalReward,
+			'episode' : self.episode,
+			'avgReward' : self.totalReward/self.episode,
+			'runStep' : self.step
+		}
