@@ -19,8 +19,5 @@ class Env:
 	def nextRandomGame(self, k):
 		pass
 
-	def getActionSpace(self):
-		pass
-
-	def getObservationSpace(self):
+	def getActions(self):
 		pass

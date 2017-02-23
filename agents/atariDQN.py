@@ -4,23 +4,31 @@ from netComm import *
 from baseAgent import BaseAgent
 import numpy as np
 import gameBuf
+from PIL import Image
 
 class AtariDQN(BaseAgent):
 	"""docstring for AtariDQN"""
 	def __init__(self, opt):
 		super(AtariDQN, self).__init__(opt)
-		self.sess = tf.Session()
+		# GPU 不会全部占用
+		config = tf.ConfigProto()
+		config.gpu_options.allow_growth = True
+		self.sess = tf.Session(config=config)
 		self.device = opt.get('device')
 		self.histLen = opt.get('histLen', 4)
 		self.height = opt.get('height', 84)
 		self.width = opt.get('width', 84)
 		self.stateDim = self.histLen*self.height*self.width
 		self.nActions = opt.get('nActions')
-		self.targetFreq = opt.get('targetFreq', 10000)
 		self.clipDelta = opt.get('clipDelta', 1)
 		self.maxReward = opt.get('maxReward', 1)
 		self.minReward = opt.get('minReward', -self.maxReward)
 		self.learningRate = opt.get('learningRate', 0.0025)
+		self.learnStart = opt.get('learnStart', 50000)
+		self.discount = opt.get('discount', 0.99)
+		self.trainFreq = opt.get('trainFreq', 4)
+		self.targetFreq = opt.get('targetFreq', 10000)
+		self.batchSize = opt.get('batchSize', 32)
 
 		self.gameBuf = gameBuf.AtariBuf(opt)
 		self.evalBuf = gameBuf.AtariBuf(opt)
@@ -41,10 +49,9 @@ class AtariDQN(BaseAgent):
 		with tf.device(self.device):
 			for i in range(len(self.QNetwork['paras'])):
 				tmp = self.QNetwork['paras'][i]
-				for j in range(len(tmp)):
-					w = self.sess.run(tmp[j])
-					op = tf.assign(self.QTarget['paras'][i][j], w)
-					self.sess.run(op)
+				w = self.sess.run(tmp)
+				op = tf.assign(self.QTarget['paras'][i], w)
+				self.sess.run(op)
 
 	def createNetwork(self):
 		parameters = []
@@ -57,19 +64,24 @@ class AtariDQN(BaseAgent):
 			l1 = tf.reshape(l0, [-1, self.histLen, self.height, self.width])
 			l2 = tf.transpose(l1, [0, 2, 3, 1])
 			l3, w, b = conv2d(l2, 32, [8, 8], [4, 4], activation=tf.nn.relu)
-			parameters.append((w, b))
+			parameters.append(w)
+			parameters.append(b)
 			l4, w, b = conv2d(l3, 64, [4, 4], [2, 2], activation=tf.nn.relu)
-			parameters.append((w, b))
+			parameters.append(w)
+			parameters.append(b)
 			l5, w, b = conv2d(l4, 64, [3, 3], [1, 1], activation=tf.nn.relu)
-			parameters.append((w, b))
+			parameters.append(w)
+			parameters.append(b)
 
 			shape = l5.get_shape().as_list()[1:]
 			l6 = tf.reshape(l5,
 					[-1, reduce(lambda x, y: x*y, shape)])
 			l7, w, b = linear(l6, 512, activation=tf.nn.relu)
-			parameters.append((w, b))
+			parameters.append(w)
+			parameters.append(b)
 			l8, w, b = linear(l7, self.nActions)
-			parameters.append((w, b))
+			parameters.append(w)
+			parameters.append(b)
 			net = l8
 
 		return {'net':net, 'inputPH':inputPH, 'paras':parameters}
@@ -125,10 +137,11 @@ class AtariDQN(BaseAgent):
 			action = np.argmax(q)
 			return action, q
 
-	def preprocess(observation):
+	def preprocess(self, observation):
 		screen = Image.fromarray(observation)
 		screen = screen.convert('L')
 		screen = screen.resize((84, 84))
+		screen = np.asarray(screen)
 		return screen
 
 	def perceive(self, step, observation, reward, terminal, ep, eval_):
@@ -152,8 +165,44 @@ class AtariDQN(BaseAgent):
 			self.gameBuf.setAction(action)
 
 			# train
+			if step > self.learnStart and step%self.trainFreq == 0:
+				self.train
 
 			# update target
+			if step > self.learnStart and step%self.targetFreq == 0:
+				self.updateTarget()
 
-	def trainerRun():
+		return action, q
+
+	def trainerRun(self, state, targets, action):
+		deltas, _ = self.sess.run(
+				(self.trainer['deltas'], self.trainer['optim']),
+				feed_dict={self.QNetwork['inputPH'] : state,
+				self.trainer['targetsPH'] : targets,
+				self.trainer['actionPH'] : action})
+
+		return np.abs(deltas).mean()
+
+	def computTargets(self, batch):
+		state = batchs['state']
+		action = batchs['action']
+		reward = batchs['reward']
+		terminal = batchs['terminal']
+		stateNext = batchs['stateNext']
+
+		q2 = self.tq(stateNext)
+		q2Max = q2.max(1)
+		targets = reward + self.discount*(1 - terminal)*q2Max
+
+		return state, targets, action
+
+	def computTD(self):
+		pass
+
+	def train(self):
+		batch = self.gameBuf.sample(self.batchSize)
+		state, targets, action = self.computTargets(batch)
+		self.trainerRun(state, targets, action)
+
+	def report(self):
 		pass
