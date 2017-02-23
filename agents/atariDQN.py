@@ -78,6 +78,7 @@ class AtariDQN(BaseAgent):
 		targetsPH = None
 		actionPH = None
 		deltas = None
+		deltasCliped = None
 		loss = None
 		optim = None
 
@@ -96,7 +97,8 @@ class AtariDQN(BaseAgent):
 				deltasCliped = tf.clip_by_value(
 						deltas, -self.clipDelta, self.clipDelta)
 
-				loss = tf.reduce_mean(tf.square(deltas)/2 + deltas - deltasCliped)
+				loss = tf.reduce_mean(tf.square(deltasCliped)/2
+						+ (tf.abs(deltas) - tf.abs(deltasCliped))*self.clipDelta)
 			else:
 				loss = tf.reduce_mean(tf.square(deltas)/2)
 
@@ -104,7 +106,7 @@ class AtariDQN(BaseAgent):
 					self.learningRate, 0.95, 0.95, 0.01).minimize(loss)
 
 		return {'targetsPH':targetsPH, 'actionPH':actionPH,
-				'deltas':deltas, 'optim':optim}
+				'deltas':deltasCliped or deltas, 'optim':optim}
 
 	def q(self, state):
 		return self.sess.run(self.QNetwork['net'],
