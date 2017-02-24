@@ -4,6 +4,11 @@ import gym
 from env import Env
 import numpy as np
 
+def envFormat(env):
+	name = ''.join([g.capitalize() for g in env.split('_')])
+	name = '{}NoFrameskip-v3'.format(name)
+	return name
+
 class AtariEnv(Env):
 	def __init__(self, env, actrep=1, randomStarts=1):
 		Env.__init__(self, env, actrep, randomStarts)
@@ -11,7 +16,7 @@ class AtariEnv(Env):
 
 	def reset(self):
 		Env.reset(self)
-		self.game = gym.make(self.env)
+		self.game = gym.make(envFormat(self.env))
 		assert type(self.game) == gym.envs.atari.AtariEnv, "只支持atari游戏"
 		self.actionSpace = self.game.action_space
 		observation = self.game.reset()

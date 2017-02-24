@@ -6,17 +6,18 @@ import players
 import time
 import os
 
-print "Start at %s" % time.asctime()
-print "PID:%5d" % os.getpid()
+if __name__ == '__main__':
+	print "Start at %s" % time.asctime()
+	print "PID:%5d" % os.getpid()
 
-opt = OptionParser()
-savePath = opt.get('savePath', './save')
-try:
-	os.makedirs(savePath)
-except OSError:
-	pass
+	opt = OptionParser()
+	savePath = opt.get('savePath', './save')
+	try:
+		os.makedirs(savePath)
+	except OSError:
+		pass
 
-player = players.ExplorePlayer(opt)
-print str(opt)
-opt.save(savePath)
-player.run(opt.get('steps'))
+	player = players.ExplorePlayer(opt)
+	print str(opt)
+	opt.save(savePath)
+	player.run(opt.get('steps'))
