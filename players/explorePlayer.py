@@ -56,7 +56,7 @@ class ExplorePlayer(Player):
 		info['time'] = t
 
 		print "evalRunTime:%5d, evalRunStep:%7d, "\
-				"totalReward:%10d, episode:%6d, avgReward:%10d" % \
+				"totalReward:%10d, episode:%6d, avgReward:%10.5f" % \
 				(info['runTime'], info['runStep'],
 				info['totalReward'], info['episode'], info['avgReward'])
 

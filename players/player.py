@@ -93,6 +93,6 @@ class Player(object):
 			'runTime' : int(self.endTime - self.startTime),
 			'totalReward' : self.totalReward,
 			'episode' : self.episode,
-			'avgReward' : self.totalReward/self.episode,
+			'avgReward' : float(self.totalReward)/self.episode,
 			'runStep' : self.step
 		}

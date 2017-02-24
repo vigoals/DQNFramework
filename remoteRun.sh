@@ -6,7 +6,7 @@ REMOTE_USER="vigoals"
 REMOTE_DIR="/home/vigoals/remote_run/DQNFramework"
 REMOTE_PORT=22
 
-SAVEPATH="./save"
+SAVEPATH="./save1"
 ENV="Breakout-v0"
 LOG=$SAVEPATH"/log.txt"
 
