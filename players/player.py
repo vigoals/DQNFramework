@@ -29,6 +29,20 @@ class Player(object):
 		self.startTime = 0
 		self.endTime = 0
 
+	def step(training=True):
+		if not self.terminal:
+			self.observation, self.reward, self.terminal = \
+					self.gameEnv.step(self.action, training)
+			self.episodeReward += self.reward
+		else:
+			self.observation, self.reward, self.terminal = \
+					self.gameEnv.nextRandomGame(training)
+			self.totalReward += self.episodeReward
+			self.episode += 1
+			self.episodeReward = 0
+
+		return self.observation, self.reward, self.terminal
+
 	def run(self, max_steps=None, max_episode=None, training=True):
 		assert (max_steps is not  None) or (max_episode is not None), \
 				"游戏无法结束"
@@ -49,17 +63,10 @@ class Player(object):
 			# action = self.gameEnv.sample()
 			self.onStartStep()
 
-			if not self.terminal:
-				self.observation, self.reward, self.terminal = \
-						self.gameEnv.step(self.action, training)
-				self.episodeReward += self.reward
-			else:
+			self.step(training)
+
+			if self.terminal:
 				self.onEndEpisode()
-				self.observation, self.reward, self.terminal = \
-						self.gameEnv.nextRandomGame(training=True)
-				self.totalReward += self.episodeReward
-				self.episode += 1
-				self.episodeReward = 0
 
 			self.onEndStep()
 

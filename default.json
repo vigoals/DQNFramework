@@ -1,10 +1,10 @@
 {
-    "device" : "/gpu:1",
+    "device" : "/gpu:0",
     "gameEnv" : "gameEnv.AtariEnv",
 	"agent" : "agents.AtariDQN",
 	"render" : false,
-	"actrep" : 1,
-	"randomStarts" : 10,
+	"actrep" : 4,
+	"randomStarts" : 30,
 	"histLen" : 4,
 	"height" : 84,
 	"width" : 84,

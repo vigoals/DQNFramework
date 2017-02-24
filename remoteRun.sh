@@ -3,11 +3,11 @@ FILES="agents gameBuf gameEnv players test *.py *.json"
 
 REMOTE_NAME="cse.sysu.edu.cn"
 REMOTE_USER="vigoals"
-REMOTE_DIR="/home/vigoals/remote_run/DQNFramework"
+REMOTE_DIR="/home/vigoals/remoteRun/DQNFramework"
 REMOTE_PORT=22
 
-SAVEPATH="./save1"
-ENV="Breakout-v0"
+SAVEPATH="./save"
+ENV="breakout"
 LOG=$SAVEPATH"/log.txt"
 
 echo "run "$REMOTE_DIR" in "$REMOTE_USER@$REMOTE_NAME " by port " $REMOTE_PORT
