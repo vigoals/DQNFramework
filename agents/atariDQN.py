@@ -239,3 +239,15 @@ class AtariDQN(BaseAgent):
 			dd.io.save(path, paras)
 		except IOError:
 			print 'WARNING: 保存agent到 %s 失败' % path
+
+	def load(self, path, tag=None):
+		if not tag:
+			path = path + '/agent.h5'
+		else:
+			path = path + '/agent-' + tag + '.h5'
+
+		paras = dd.io.load(path)
+		with tf.device(self.device):
+			for i in range(len(self.QNetwork['paras'])):
+			 	op = tf.assign(self.QNetwork['paras'][i], paras[i])
+				self.sess.run(op)

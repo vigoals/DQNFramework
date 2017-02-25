@@ -13,7 +13,7 @@ class AtariBuf(BaseBuf):
 
 	def statePreProcess(self, state):
 		state = state.reshape(-1)
-		return (state*255.0).astype(np.uint8)
+		return state.copy().astype(np.uint8)
 
 	def getState(self, i=None):
 		i = i if i is not None else -1

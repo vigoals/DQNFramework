@@ -17,36 +17,9 @@ class Player(object):
 		self.agent = agent if agent is not None else AGENT(opt)
 
 		# run 所要用到的数据
-		self.observation = None
-		self.reward = None
-		self.terminal = None
-		self.step = 0
-		self.episode = 0
-		self.action = 0
-		self.episodeReward = 0
-		self.totalReward = 0
-		self.training = False
-		self.startTime = 0
-		self.endTime = 0
+		self.reset()
 
-	def step(training=True):
-		if not self.terminal:
-			self.observation, self.reward, self.terminal = \
-					self.gameEnv.step(self.action, training)
-			self.episodeReward += self.reward
-		else:
-			self.observation, self.reward, self.terminal = \
-					self.gameEnv.nextRandomGame(training)
-			self.totalReward += self.episodeReward
-			self.episode += 1
-			self.episodeReward = 0
-
-		return self.observation, self.reward, self.terminal
-
-	def run(self, max_steps=None, max_episode=None, training=True):
-		assert (max_steps is not  None) or (max_episode is not None), \
-				"游戏无法结束"
-
+	def reset(self, training=True):
 		self.step = 0
 		self.episode = 0
 		self.action = 0
@@ -56,6 +29,24 @@ class Player(object):
 		self.training = training
 		self.startTime = time.time()
 
+		return self.observation, self.reward, self.terminal
+
+	def oneStep(self, training=True):
+		if not self.terminal:
+			self.observation, self.reward, self.terminal = \
+					self.gameEnv.step(self.action, training=training)
+		else:
+			self.observation, self.reward, self.terminal = \
+					self.gameEnv.nextRandomGame(training=training)
+
+		return self.observation, self.reward, self.terminal
+
+	def run(self, maxSteps=None, maxEpisode=None, training=True):
+		assert (max_steps is not  None) or (max_episode is not None), \
+				"游戏无法结束"
+
+		self.reset()
+
 		self.onStartRun()
 
 		while True:
@@ -63,17 +54,22 @@ class Player(object):
 			# action = self.gameEnv.sample()
 			self.onStartStep()
 
-			self.step(training)
+			self.oneStep(training)
 
-			if self.terminal:
+			if not self.terminal:
+				self.episodeReward += self.reward
+			else:
+				self.totalReward += self.episodeReward
+				self.episode += 1
 				self.onEndEpisode()
+				self.episodeReward = 0
 
 			self.onEndStep()
 
 			self.step += 1
-			if max_steps is not None and self.step >= max_steps:
+			if maxSteps is not None and self.step >= maxSteps:
 				break
-			if max_episode is not None and self.episode >= max_episode:
+			if maxEpisode is not None and self.episode >= maxEpisode:
 				break
 
 		self.endTime = time.time()

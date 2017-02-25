@@ -1,5 +1,5 @@
 #!/bin/bash
-FILES="agents gameBuf gameEnv players test *.py *.json"
+FILES="agents gameBuf gameEnv players test tools *.py *.json"
 
 REMOTE_NAME="cse.sysu.edu.cn"
 REMOTE_USER="vigoals"
