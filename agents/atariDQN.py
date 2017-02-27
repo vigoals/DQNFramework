@@ -13,6 +13,7 @@ class AtariDQN(BaseAgent):
 		super(AtariDQN, self).__init__(opt)
 		# GPU 不会全部占用
 		config = tf.ConfigProto()
+		# config.log_device_placement = True
 		config.gpu_options.allow_growth = True
 		self.sess = tf.Session(config=config)
 		self.device = opt.get('device')
@@ -39,21 +40,28 @@ class AtariDQN(BaseAgent):
 
 		self.QNetwork = self.createNetwork()
 		self.trainer = self.createTrainer()
+		self.targetAssigns = None
 		if self.targetFreq > 0:
 			self.QTarget = self.createNetwork()
 			self.sess.run(tf.global_variables_initializer())
+			self.targetAssigns = self.getTargetAssigns()
 			self.updateTarget()
 		else:
 			self.QTarget = self.QNetwork
 			self.sess.run(tf.global_variables_initializer())
 
-	def updateTarget(self):
+	def getTargetAssigns(self):
+		tmp = []
 		with tf.device(self.device):
 			for i in range(len(self.QNetwork['paras'])):
-				tmp = self.QNetwork['paras'][i]
-				w = self.sess.run(tmp)
-				op = tf.assign(self.QTarget['paras'][i], w)
-				self.sess.run(op)
+				op = tf.assign(self.QTarget['paras'][i],
+						self.QNetwork['paras'][i])
+				tmp.append(op)
+		return tmp
+
+	def updateTarget(self):
+		if self.targetAssigns:
+			self.sess.run(self.targetAssigns)
 
 	def createNetwork(self):
 		parameters = []
@@ -63,9 +71,9 @@ class AtariDQN(BaseAgent):
 		with tf.device(self.device):
 			l0 = tf.placeholder(tf.float32, [None, self.stateDim])
 			inputPH = l0
-			l1 = tf.reshape(l0, [-1, self.histLen, self.height, self.width])
-			l2 = tf.transpose(l1, [0, 2, 3, 1])
-			l3, w, b = conv2d(l2, 32, [8, 8], [4, 4], activation=tf.nn.relu)
+			l1 = tf.reshape(l0, [-1, self.height, self.width, self.histLen])
+			# l2 = tf.transpose(l1, [0, 2, 3, 1])
+			l3, w, b = conv2d(l1, 32, [8, 8], [4, 4], activation=tf.nn.relu)
 			parameters.append(w)
 			parameters.append(b)
 			l4, w, b = conv2d(l3, 64, [4, 4], [2, 2], activation=tf.nn.relu)
@@ -86,7 +94,16 @@ class AtariDQN(BaseAgent):
 			parameters.append(b)
 			net = l8
 
-		return {'net':net, 'inputPH':inputPH, 'paras':parameters}
+		setParaPHs = []
+		setParas = []
+		for w in parameters:
+			ph = tf.placeholder(tf.float32, w.get_shape().as_list())
+			op = tf.assign(w, ph)
+			setParaPHs.append(ph)
+			setParas.append(op)
+
+		return {'net':net, 'inputPH':inputPH, 'paras':parameters,
+				'setParaPHs':setParaPHs, 'setParas':setParas}
 
 	def createTrainer(self):
 		targetsPH = None
@@ -95,6 +112,8 @@ class AtariDQN(BaseAgent):
 		deltasCliped = None
 		loss = None
 		optim = None
+		grads = None
+		updateGrads = None
 
 		with tf.device(self.device):
 			targetsPH = tf.placeholder(tf.float32, [None])
@@ -117,11 +136,16 @@ class AtariDQN(BaseAgent):
 				loss = tf.reduce_mean(tf.square(deltas)/2)
 
 			optim = tf.train.RMSPropOptimizer(
-					self.learningRate, 0.95, 0.95, 0.01).minimize(loss)
+					self.learningRate, momentum=0.95, epsilon=0.01)
+
+			grads = optim.compute_gradients(loss,
+					var_list=self.QNetwork['paras'])
+
+			updateGrads = optim.apply_gradients(grads)
 
 		return {'targetsPH':targetsPH, 'actionPH':actionPH,
 				'deltas':deltasCliped if deltasCliped is not None else deltas,
-				'optim':optim}
+				'optim':optim, 'grads':grads, 'updateGrads':updateGrads}
 
 	def q(self, state):
 		return self.sess.run(self.QNetwork['net'],
@@ -168,18 +192,22 @@ class AtariDQN(BaseAgent):
 			self.gameBuf.setAction(action)
 
 			# train
-			if step > self.learnStart and step%self.trainFreq == 0:
+			if step > self.learnStart \
+					and self.trainFreq > 0 \
+					and step%self.trainFreq == 0:
 				self.train()
 
 			# update target
-			if step > self.learnStart and step%self.targetFreq == 0:
+			if step > self.learnStart \
+					and self.targetFreq > 0 \
+					and step%self.targetFreq == 0:
 				self.updateTarget()
 
 		return action, q
 
 	def trainerRun(self, state, targets, action):
 		deltas, _ = self.sess.run(
-				(self.trainer['deltas'], self.trainer['optim']),
+				(self.trainer['deltas'], self.trainer['updateGrads']),
 				feed_dict={self.QNetwork['inputPH'] : state,
 				self.trainer['targetsPH'] : targets,
 				self.trainer['actionPH'] : action})
@@ -203,13 +231,14 @@ class AtariDQN(BaseAgent):
 		batch = self.gameBuf.sample(self.evalBatchSize)
 		state, targets, action = self.computTargets(batch)
 
-		deltas, q = self.sess.run(
-				(self.trainer['deltas'], self.QNetwork['net']),
+		deltas, q, grads = self.sess.run(
+				(self.trainer['deltas'], self.QNetwork['net'],
+				self.trainer['grads']),
 				feed_dict={self.QNetwork['inputPH'] : state,
 				self.trainer['targetsPH'] : targets,
 				self.trainer['actionPH'] : action})
 
-		return deltas, q
+		return deltas, q, grads
 
 	def train(self):
 		batch = self.gameBuf.sample(self.batchSize)
@@ -217,23 +246,50 @@ class AtariDQN(BaseAgent):
 		self.trainerRun(state, targets, action)
 
 	def report(self):
+		paras = self.sess.run(self.QNetwork['paras'])
+		means = []
+		stds = []
+		print 'Paras info:'
+		for w in paras:
+			means.append(w.mean())
+			stds.append(w.std())
+		print 'paras mean: ' + str(means)
+		print 'paras std: ' + str(stds)
+
+		paras = self.sess.run(self.QTarget['paras'])
+		means = []
+		stds = []
+		print 'Paras info:'
+		for w in paras:
+			means.append(w.mean())
+			stds.append(w.std())
+		print 'target paras mean: ' + str(means)
+		print 'target paras std: ' + str(stds)
+
 		if len(self.gameBuf) > 1:
-			deltas, q = self.computeDeltas()
+			deltas, q, grads = self.computeDeltas()
 			print 'TD:%10.6f' % np.abs(deltas).mean()
+			print 'deltas mean:%10.6f' % deltas.mean()
 			print 'deltas std:%10.6f' % deltas.std()
 			print 'Q mean:%10.6f' % q.mean()
 			print 'Q std:%10.6f' % q.std()
+
+			means = []
+			stds = []
+			for k in grads:
+				means.append(k[0].mean())
+				stds.append(k[0].std())
+
+			print 'grads mean: ' + str(means)
+			print 'grads std: ' + str(stds)
+
 
 	def save(self, path, tag=None):
 		if not tag:
 			path = path + '/agent.h5'
 		else:
 			path = path + '/agent-' + tag + '.h5'
-		paras = []
-		for i in range(len(self.QNetwork['paras'])):
-			tmp = self.QNetwork['paras'][i]
-			w = self.sess.run(tmp)
-			paras.append(w)
+		paras = self.sess.run(self.QNetwork['paras'])
 
 		try:
 			dd.io.save(path, paras)
@@ -246,8 +302,17 @@ class AtariDQN(BaseAgent):
 		else:
 			path = path + '/agent-' + tag + '.h5'
 
+		fd = {}
 		paras = dd.io.load(path)
-		with tf.device(self.device):
-			for i in range(len(self.QNetwork['paras'])):
-			 	op = tf.assign(self.QNetwork['paras'][i], paras[i])
-				self.sess.run(op)
+		for i in range(len(self.QNetwork['setParaPHs'])):
+			ph = self.QNetwork['setParaPHs'][i]
+			w = paras[i]
+			fd[ph] = w
+
+		self.sess.run(self.QNetwork['setParas'], feed_dict=fd)
+
+		# paras = dd.io.load(path)
+		# with tf.device(self.device):
+		# 	for i in range(len(self.QNetwork['paras'])):
+		# 	 	op = tf.assign(self.QNetwork['paras'][i], paras[i])
+		# 		self.sess.run(op)

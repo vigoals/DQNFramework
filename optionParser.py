@@ -20,6 +20,13 @@ class OptionParser:
 				default = None,
 				help = '保存路径'
 				)
+		parser.add_option('-d', '--device',
+				action = "store",
+				type = 'string',
+				dest = 'device',
+				default = None,
+				help = '设备'
+				)
 		(options, args) = parser.parse_args(sys.argv[1:])
 		self.options = options.__dict__
 		# assert len(args) == 1, "usage:./main.py [optinos] env"

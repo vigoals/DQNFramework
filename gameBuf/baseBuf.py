@@ -42,7 +42,8 @@ class BaseBuf(object):
 
 	def getState(self, i=None):
 		i = i if i is not None else -1
-		assert i <= len(self.buf), '超出范围'
+		i = i if i >= 0 else (len(self.buf) + i)
+		assert 0 <= i < len(self.buf), '超出范围'
 		return self.buf[i]['state'].copy()
 
 	def getStateByStep(self, step):
@@ -52,7 +53,8 @@ class BaseBuf(object):
 
 	def get(self, i=None):
 		i = i if i is not None else -1
-		assert i < len(self.buf), '超出范围'
+		i = i if i >= 0 else (len(self.buf) + i)
+		assert 0 <= i < len(self.buf), '超出范围'
 		return self.buf[i]['step'], self.getState(i), self.buf[i]['action'], \
 				self.buf[i]['reward'], self.buf[i]['terminal']
 

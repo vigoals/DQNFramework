@@ -4,29 +4,30 @@ from toolsComm import *
 if __name__ == '__main__':
 	opt = OptionParser()
 	# opt.set('render', True)
-	opt.set('device', '/cpu:0')
+	opt.set('trainFreq', 0)
 	player = players.Player(opt)
 
-	savePath = opt.get('savePath')
+	savePath = opt.get('savePath', 'best')
 	agent = player.agent
-	buf = agent.evalBuf
+	buf = agent.gameBuf
 	agent.load(savePath)
 
-	observation, reward, terminal = player.reset(False)
+	observation, reward, terminal = player.reset(True)
 	qAll = []
 	r = []
 	t = []
-	for i in range(500):
+	for i in range(200):
 		player.action, _ = agent.perceive(
-				i, observation, reward, terminal, 1, True)
+				i, observation, reward, terminal, 1, False)
 
 		r.append(reward)
 		t.append(terminal)
 
 		state = buf.getState()
 		qAll.append(agent.q([state]).reshape(-1))
-		observation, reward, terminal = player.oneStep(False)
+		observation, reward, terminal = player.oneStep(True)
 
+	agent.report()
 	qAll = np.array(qAll)
 
 	# plt.hold(False)
@@ -36,5 +37,5 @@ if __name__ == '__main__':
 
 	plt.plot(r, label='reward')
 	plt.plot(np.array(t).astype(np.float), label='terminal')
-	plt.legend()
+	plt.legend(loc='upper right')
 	plt.show()

@@ -42,10 +42,10 @@ class Player(object):
 		return self.observation, self.reward, self.terminal
 
 	def run(self, maxSteps=None, maxEpisode=None, training=True):
-		assert (max_steps is not  None) or (max_episode is not None), \
+		assert (maxSteps is not  None) or (maxEpisode is not None), \
 				"游戏无法结束"
 
-		self.reset()
+		self.reset(training)
 
 		self.onStartRun()
 

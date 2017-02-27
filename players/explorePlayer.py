@@ -21,6 +21,7 @@ class ExplorePlayer(Player):
 		self.saveFreq = opt.get('saveFreq', 10000)
 		self.savePath = opt.get('savePath', './save')
 		self.evalInfo = []
+		self.maxEvalReward = -1
 
 	def onStartStep(self):
 		ep = 1
@@ -50,7 +51,8 @@ class ExplorePlayer(Player):
 		t = int(time.time() - self.startTime)
 		print "Run time:%10d" % t
 
-		self.evalPlayer.run(self.evalMaxSteps, self.evalMaxEpisode, False)
+		self.evalPlayer.run(self.evalMaxSteps, self.evalMaxEpisode,
+			training=False)
 		info = self.evalPlayer.getInfo()
 		info['step'] = self.step
 		info['time'] = t
@@ -61,6 +63,10 @@ class ExplorePlayer(Player):
 				info['totalReward'], info['episode'], info['avgReward'])
 
 		self.evalInfo.append(info)
+
+		if info['avgReward'] > self.maxEvalReward:
+			self.maxEvalReward = info['avgReward']
+			self.agent.save(self.savePath, 'best')
 
 	def save(self):
 		self.agent.save(self.savePath)

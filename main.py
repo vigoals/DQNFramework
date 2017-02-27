@@ -7,9 +7,6 @@ import time
 import os
 
 if __name__ == '__main__':
-	print "Start at %s" % time.asctime()
-	print "PID:%5d" % os.getpid()
-
 	opt = OptionParser()
 	savePath = opt.get('savePath', './save')
 	try:
@@ -18,6 +15,8 @@ if __name__ == '__main__':
 		pass
 
 	player = players.ExplorePlayer(opt)
+	print "Start at %s" % time.asctime()
+	print "PID:%5d" % os.getpid()
 	print str(opt)
 	opt.save(savePath)
 	player.run(opt.get('steps'))
