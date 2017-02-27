@@ -16,9 +16,9 @@ if __name__ == '__main__':
 	qAll = []
 	r = []
 	t = []
-	for i in range(200):
+	for i in range(1000):
 		player.action, _ = agent.perceive(
-				i, observation, reward, terminal, 1, False)
+				i, observation, reward, terminal, 0.05, False)
 
 		r.append(reward)
 		t.append(terminal)

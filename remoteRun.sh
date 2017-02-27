@@ -7,7 +7,7 @@ REMOTE_DIR="/home/vigoals/remoteRun/DQNFramework"
 REMOTE_PORT=22
 
 ENV="breakout"
-GPUID=0
+GPUID=2
 DEVICE="/gpu:"$GPUID
 SAVEPATH="./save-"$ENV"-"$GPUID
 

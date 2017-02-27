@@ -136,7 +136,8 @@ class AtariDQN(BaseAgent):
 				loss = tf.reduce_mean(tf.square(deltas)/2)
 
 			optim = tf.train.RMSPropOptimizer(
-					self.learningRate, momentum=0.95, epsilon=0.01)
+					self.learningRate, decay=0.95,
+					momentum=0.95, epsilon=0.01)
 
 			grads = optim.compute_gradients(loss,
 					var_list=self.QNetwork['paras'])
@@ -227,8 +228,9 @@ class AtariDQN(BaseAgent):
 
 		return state, targets, action
 
-	def computeDeltas(self):
-		batch = self.gameBuf.sample(self.evalBatchSize)
+	def computeDeltas(self, k=None):
+		k = k or self.evalBatchSize
+		batch = self.gameBuf.sample(k)
 		state, targets, action = self.computTargets(batch)
 
 		deltas, q, grads = self.sess.run(
@@ -238,7 +240,7 @@ class AtariDQN(BaseAgent):
 				self.trainer['targetsPH'] : targets,
 				self.trainer['actionPH'] : action})
 
-		return deltas, q, grads
+		return deltas, q, grads, targets
 
 	def train(self):
 		batch = self.gameBuf.sample(self.batchSize)
@@ -267,7 +269,7 @@ class AtariDQN(BaseAgent):
 		print 'target paras std: ' + str(stds)
 
 		if len(self.gameBuf) > 1:
-			deltas, q, grads = self.computeDeltas()
+			deltas, q, grads, _ = self.computeDeltas()
 			print 'TD:%10.6f' % np.abs(deltas).mean()
 			print 'deltas mean:%10.6f' % deltas.mean()
 			print 'deltas std:%10.6f' % deltas.std()
@@ -283,6 +285,12 @@ class AtariDQN(BaseAgent):
 			print 'grads mean: ' + str(means)
 			print 'grads std: ' + str(stds)
 
+		# if len(self.gameBuf) > 1:
+		# 	deltas, q, grads, targets = self.computeDeltas(10)
+		# 	print "!!!!!!!!!!!!!"
+		# 	print targets
+		# 	print q
+		# 	print deltas
 
 	def save(self, path, tag=None):
 		if not tag:
