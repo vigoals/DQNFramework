@@ -7,7 +7,7 @@ if __name__ == '__main__':
 	opt.set('trainFreq', 0)
 	player = players.Player(opt)
 
-	savePath = opt.get('savePath', 'best')
+	savePath = opt.get('savePath')
 	agent = player.agent
 	buf = agent.gameBuf
 	agent.load(savePath)

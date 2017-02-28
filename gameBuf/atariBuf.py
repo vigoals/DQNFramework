@@ -8,6 +8,9 @@ class AtariBuf(BaseBuf):
 	def __init__(self, opt):
 		super(AtariBuf, self).__init__(opt)
 		self.histLen = opt.get('histLen', 4)
+		self.histSelect = opt.get('histSelect', range(-self.histLen + 1, 1))
+		assert len(self.histSelect) == self.histLen, 'histSelect与histLen不相符'
+		assert self.histSelect[-1] == 0, 'histSelect最后一项必须为0'
 
 	def statePreProcess(self, state):
 		state = state.reshape(-1)
@@ -23,9 +26,14 @@ class AtariBuf(BaseBuf):
 
 		k = i
 		for j in range(self.histLen - 1, -1, -1):
-			state[:, j] = self.buf[k]['state'].astype(np.float)/255.0
-			k = k - 1
-			if k < 0 or self.buf[k]['terminal']:
+			t = False
+			while k > i + self.histSelect[j]:
+				k -= 1
+				if k < 0 or self.buf[k]['terminal']:
+					t = True
+					break
+			if t:
 				break
+			state[:, j] = self.buf[k]['state'].astype(np.float)/255.0
 
 		return state.reshape(-1)
