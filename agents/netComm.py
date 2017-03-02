@@ -18,7 +18,7 @@ def conv2d(input_, outputDim, kernelSize,
 	if stddev is None:
 		stddev = 1/np.sqrt(kernelSize[0]*kernelSize[1]*inputDim)
 
-	with tf.name_scope(name):
+	with tf.variable_scope(name):
 		weight = getWeights(
 				[kernelSize[0], kernelSize[1], inputDim, outputDim], stddev)
 		strides = [1, strides[0], strides[1], 1]
@@ -36,7 +36,7 @@ def linear(input_, outputSize, stddev=None, activation=None, name='linear'):
 	if stddev is None:
 		stddev = 1/np.sqrt(shape[1])
 
-	with tf.name_scope(name):
+	with tf.variable_scope(name):
 		weight = getWeights([shape[1], outputSize], stddev)
 		bias = getBias([outputSize], stddev)
 
@@ -47,3 +47,114 @@ def linear(input_, outputSize, stddev=None, activation=None, name='linear'):
 		else:
 			return tf.matmul(input_, weight) + bias, weight, bias
 			# return tf.nn.bias_add(tf.matmul(input_, weight), bias), weight, bias
+
+class Network(object):
+	"""Network"""
+	def __init__(self, inputDim, outputDim,
+			convLayers=None, convShape=None,
+			linearLayers=None, dueling=False,
+			sess=None, name='net'):
+		self.paras = []
+		self.parasAssigns = []
+		self.parasAssignsPH = []
+		self.input = None
+		self.inputDim = inputDim
+		self.outputDim = outputDim
+		self.convShape = convShape
+		self.convLayers = convLayers
+		self.dueling = dueling
+		self.linearLayers = linearLayers
+		self.name = name
+		config = tf.ConfigProto()
+		config.gpu_options.allow_growth = True
+		self.sess = sess if sess is not None else tf.Session(config)
+
+		self.output = self.buidNet()
+
+	def buidNet(self):
+		lastOp = None
+		with tf.variable_scope(self.name):
+			self.input = tf.placeholder(tf.float32, [None, self.stateDim])
+
+			lastOp = self.input
+
+			if self.convLayers is not None:
+				lastOp = tf.reshape([-1] + self.convShape)
+
+				for i, l in enumerate(self.convLayers):
+					name = 'conv' + str(i)
+					lastOp, w, b = conv2d(lastOp,
+							self.convLayers[0],	# outputSize
+							self.convLayers[1],	# kernelSize
+							self.convLayers[2],	# strides
+							activation=tf.nn.relu, name=name)
+					self.paras.append(w)
+					self.paras.append(b)
+
+				shape = lastOp.get_shape().as_list()[1:]
+				lastOp = tf.reshape(lastOp,
+						[-1, reduce(lambda x, y: x*y, shape)])
+			if self.linearLayers is not None:
+				for i, l in enumerate(self.linearLayers):
+					name = 'linear' + str(i)
+					lastOp, w, b = linear(lastOp, self.linearLayers[0],
+							activation=tf.nn.relu, name=name)
+					self.paras.append(w)
+					self.paras.append(b)
+
+			lastOp, w, b = linear(lastOp, self.outputDim, name='output')
+			self.paras.append(w)
+			self.paras.append(b)
+
+			# 用于设置paras
+			self.parasAssigns = []
+			self.parasAssignsPH = []
+			for p in self.paras:
+				ph = tf.placeholder(tf.float32, p.get_shape().as_list())
+				op = tf.assign(p, ph)
+				self.parasAssignsPH.append(ph)
+				self.parasAssigns.append(op)
+
+		return lastOp
+
+	def getParas(self):
+		return self.sess.run(self.paras)
+
+	def setParas(self, paras):
+		for i, p in enumerate(paras):
+			ph = self.parasAssignsPH[i]
+			pa = self.parasAssigns[i]
+			self.sess.run(pa, feed_dict={ph:p})
+
+	def forward(self, input_):
+		self.sess(self.output, feed_dict={self.input:input_})
+
+class Optimizer(object):
+	def __init__(self, net, learningRate,
+			nActions, clipDelta=None):
+		self.targetsPH = tf.placeholder(tf.float32, [None])
+		self.actionPH = tf.placeholder(tf.float32, [None])
+
+		actionOneHot = tf.one_hot(self.actionPH, nActions, 1.0, 0.0)
+
+		q = tf.reduce_sum(net.output*actionOneHot, 1)
+		self.deltas = self.targetsPH - q
+
+		if self.clipDelta:
+			deltasCliped = tf.clip_by_value(
+					deltas, clipDelta, clipDelta)
+
+			self.loss = tf.reduce_mean(tf.square(deltasCliped)/2
+					+ (tf.abs(deltas) - tf.abs(deltasCliped))*clipDelta)
+			self.deltas = deltasCliped
+		else:
+			self.loss = tf.reduce_mean(tf.square(deltas)/2)
+
+		self.optim = tf.train.RMSPropOptimizer(
+				learningRate, decay=0.95,
+				epsilon=0.01, centered=True)
+
+		self.grads = self.optim.compute_gradients(self.loss,
+				var_list=net.paras)
+
+		self.applyGrads = self.optim.apply_gradients(self.grads)

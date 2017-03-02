@@ -6,10 +6,10 @@ class BaseAgent(object):
 		pass
 
     def perceive(self, step, observation, reward, terminal, ep, eval):
-        pass
+        return 0, 0
 
 	def report(self):
 		pass
-		
+
 	def save(self, savePath):
 		pass

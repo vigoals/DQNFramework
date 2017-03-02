@@ -137,7 +137,7 @@ class AtariDQN(BaseAgent):
 
 			optim = tf.train.RMSPropOptimizer(
 					self.learningRate, decay=0.95,
-					momentum=0.95, epsilon=0.01)
+					momentum=0, epsilon=0.01, centered=True)
 
 			grads = optim.compute_gradients(loss,
 					var_list=self.QNetwork['paras'])
