@@ -11,11 +11,12 @@ def envFormat(env):
 
 class AtariEnv(Env):
 	def __init__(self, env, actrep=1, randomStarts=1):
-		Env.__init__(self, env, actrep, randomStarts)
-		self.reset()
+		Env.__init__(self, env)
+		self.actrep = actrep
+		self.randomStarts = randomStarts
+		self._reset()
 
-	def reset(self):
-		Env.reset(self)
+	def _reset(self):
 		self.game = gym.make(envFormat(self.env))
 		assert type(self.game) == gym.envs.atari.AtariEnv, "只支持atari游戏"
 		self.actionSpace = self.game.action_space

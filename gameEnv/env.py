@@ -1,11 +1,6 @@
 class Env:
-	def __init__(self, env, actrep=1, randomStarts=1):
-		self.actrep = actrep
-		self.randomStarts = randomStarts
+	def __init__(self, env):
 		self.env = env
-
-	def reset(self):
-		pass
 
 	def render(self):
 		pass
@@ -20,4 +15,7 @@ class Env:
 		pass
 
 	def getActions(self):
-		pass
+		return None
+
+	def getObservationSpace(self):
+		return None, None, None

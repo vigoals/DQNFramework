@@ -1,5 +1,5 @@
 #!/bin/bash
-FILES="agents gameBuf gameEnv players test tools *.py *.json"
+FILES="agents gameBuf gameEnv players test tools opts *.py *.json"
 
 REMOTE_NAME="cse.sysu.edu.cn"
 REMOTE_USER="vigoals"
@@ -10,6 +10,7 @@ ENV="breakout"
 GPUID=0
 DEVICE="/gpu:"$GPUID
 SAVEPATH="./save-"$ENV"-"$GPUID
+OPT="opts/atari.json"
 
 LOG=$SAVEPATH"/log.txt"
 
@@ -31,4 +32,4 @@ $SSH_CMD "mkdir -pv $REMOTE_DIR && cd $REMOTE_DIR && rm -rvf $FILES"
 scp -P $REMOTE_PORT -r $FILES $REMOTE_USER@$REMOTE_NAME:$REMOTE_DIR
 
 $SSH_CMD "cd $REMOTE_DIR && mkdir -pv $SAVEPATH "\
-"&& nohup ./main.py -c default.json -d $DEVICE -s $SAVEPATH $ENV >$LOG 2>&1 &"
+"&& nohup ./main.py -c $OPT -d $DEVICE -s $SAVEPATH $ENV >$LOG 2>&1 &"

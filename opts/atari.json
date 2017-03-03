@@ -2,6 +2,7 @@
     "device" : "/gpu:0",
     "gameEnv" : "gameEnv.AtariEnv",
 	"agent" : "agents.AtariDQN",
+	"buf" : "gameBuf.AtariBuf",
 	"render" : false,
 	"actrep" : 4,
 	"randomStarts" : 30,

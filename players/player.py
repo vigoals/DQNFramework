@@ -4,6 +4,15 @@ import gameEnv
 import agents
 import time
 
+def mergeList(l):
+	ret = []
+	for k in l:
+		if isinstance(k, list):
+			ret += mergeList(k)
+		else:
+			ret += [k]
+	return ret
+
 class Player(object):
 	def __init__(self, opt, agent=None):
 		exec('Env = ' + opt.get('gameEnv'))
@@ -12,6 +21,12 @@ class Player(object):
 		self.randomStarts = opt.get('randomStarts', 30)
 		self.gameEnv = Env(self.env, self.actrep, self.randomStarts)
 		self.nActions = opt.get('nActions', self.gameEnv.getActions())
+
+		oss, osl, osh = self.gameEnv.getObservationSpace()
+		if oss is not None:
+			opt.set('stateDim', reduce(lambda, oss))
+			opt.set('stateLow', mergeList(osl))
+			opt.set('stateHigh', mergeList(osh))
 
 		exec('AGENT = ' + opt.get('agent'))
 		self.agent = agent if agent is not None else AGENT(opt)
