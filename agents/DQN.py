@@ -84,8 +84,10 @@ class DQN(BaseAgent):
 
 		observation = np.array(observation)
 		mean = (self.stateLow + self.stateHigh)/2
-		range_ = (self.stateHigh - self.stateLow)/2
-		state = (observation - mean)/range_
+		scale = (self.stateHigh - self.stateLow)/2
+		# maxScale
+		scale[scale > 10] = 10
+		state = (observation - mean)/scale
 
 		if not eval_:
 			self.gameBuf.add(step, state, terminal)
@@ -95,6 +97,7 @@ class DQN(BaseAgent):
 
 	def perceive(self, step, observation, reward, terminal, ep, eval_):
 		state = self.preprocess(step, observation, reward, terminal, eval_)
+
 		if not eval_:
 			self.step = step
 
@@ -151,7 +154,7 @@ class DQN(BaseAgent):
 				feed_dict={self.QNetwork.input : state,
 				self.optimizer.targetsPH : targets,
 				self.optimizer.actionPH : action})
-				
+
 		return deltas, q, grads, targets
 
 	def train(self):
