@@ -5,7 +5,7 @@ from env import Env
 import numpy as np
 
 class GymEnv(Env):
-	def __init__(self, env):
+	def __init__(self, env, *args):
 		Env.__init__(self, env)
 		self._reset()
 

@@ -82,15 +82,15 @@ class ExplorePlayer(Player):
 			pass
 
 	def onEndStep(self):
-		if self.step%self.reportFreq == 0:
+		if self.step%self.reportFreq == self.reportFreq - 1:
 			self.report()
 
 		if self.step > self.learnStart and \
 				self.evalFreq > 0 and \
-				self.step%self.evalFreq == 0:
+				self.step%self.evalFreq == self.evalFreq - 1:
 			self.eval()
 
 		if self.step > self.learnStart and \
 				self.saveFreq > 0 and \
-				self.step%self.saveFreq == 0:
+				self.step%self.saveFreq == self.saveFreq - 1:
 			self.save()

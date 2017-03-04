@@ -18,13 +18,13 @@ if __name__ == '__main__':
 	t = []
 	for i in range(1000):
 		player.action, _ = agent.perceive(
-				i, observation, reward, terminal, 0.05, False)
+				i, observation, reward, terminal, opt.get('epsTest'), False)
 
 		r.append(reward)
 		t.append(terminal)
 
 		state = buf.getState()
-		qAll.append(agent.q([state]).reshape(-1))
+		qAll.append(agent.q(state).reshape(-1))
 		observation, reward, terminal = player.oneStep(True)
 
 	agent.report()

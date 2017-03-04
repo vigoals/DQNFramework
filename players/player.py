@@ -17,14 +17,14 @@ class Player(object):
 	def __init__(self, opt, agent=None):
 		exec('Env = ' + opt.get('gameEnv'))
 		self.env = opt.get('env')
-		self.actrep = opt.get('actrep', 4)
-		self.randomStarts = opt.get('randomStarts', 30)
+		self.actrep = opt.get('actrep')
+		self.randomStarts = opt.get('randomStarts')
 		self.gameEnv = Env(self.env, self.actrep, self.randomStarts)
 		self.nActions = opt.get('nActions', self.gameEnv.getActions())
 
 		oss, osl, osh = self.gameEnv.getObservationSpace()
 		if oss is not None:
-			opt.set('stateDim', reduce(lambda, oss))
+			opt.set('stateDim', reduce(lambda x,y:x*y, oss))
 			opt.set('stateLow', mergeList(osl))
 			opt.set('stateHigh', mergeList(osh))
 
@@ -51,8 +51,12 @@ class Player(object):
 			self.observation, self.reward, self.terminal = \
 					self.gameEnv.step(self.action, training=training)
 		else:
-			self.observation, self.reward, self.terminal = \
-					self.gameEnv.nextRandomGame(training=training)
+			if self.randomStarts is not None:
+				self.observation, self.reward, self.terminal = \
+						self.gameEnv.nextRandomGame(training=training)
+			else:
+				self.observation, self.reward, self.terminal = \
+						self.gameEnv.newGame()
 
 		return self.observation, self.reward, self.terminal
 

@@ -74,7 +74,8 @@ class Network(object):
 	def buidNet(self):
 		lastOp = None
 		with tf.variable_scope(self.name):
-			self.input = tf.placeholder(tf.float32, [None, self.stateDim])
+			self.input = tf.placeholder(
+					tf.float32, [None, self.inputDim], name='input')
 
 			lastOp = self.input
 
@@ -127,34 +128,35 @@ class Network(object):
 			self.sess.run(pa, feed_dict={ph:p})
 
 	def forward(self, input_):
-		self.sess(self.output, feed_dict={self.input:input_})
+		return self.sess.run(self.output, feed_dict={self.input:input_})
 
 class Optimizer(object):
 	def __init__(self, net, learningRate,
-			nActions, clipDelta=None):
-		self.targetsPH = tf.placeholder(tf.float32, [None])
-		self.actionPH = tf.placeholder(tf.float32, [None])
+			nActions, clipDelta=None, name='optimizer'):
+		with tf.variable_scope(name):
+			self.targetsPH = tf.placeholder(tf.float32, [None], name='targetsPH')
+			self.actionPH = tf.placeholder(tf.int32, [None], name='actionPH')
 
-		actionOneHot = tf.one_hot(self.actionPH, nActions, 1.0, 0.0)
+			self.actionOneHot = tf.one_hot(self.actionPH, nActions, 1.0, 0.0)
 
-		q = tf.reduce_sum(net.output*actionOneHot, 1)
-		self.deltas = self.targetsPH - q
+			self.qOneHot = tf.reduce_sum(net.output*self.actionOneHot, 1)
+			self.deltas = self.targetsPH - self.qOneHot
 
-		if self.clipDelta:
-			deltasCliped = tf.clip_by_value(
-					deltas, clipDelta, clipDelta)
+			if clipDelta:
+				deltasCliped = tf.clip_by_value(
+						self.deltas, -clipDelta, clipDelta)
 
-			self.loss = tf.reduce_mean(tf.square(deltasCliped)/2
-					+ (tf.abs(deltas) - tf.abs(deltasCliped))*clipDelta)
-			self.deltas = deltasCliped
-		else:
-			self.loss = tf.reduce_mean(tf.square(deltas)/2)
+				self.loss = tf.reduce_mean(tf.square(deltasCliped)/2
+						+ (tf.abs(self.deltas) - tf.abs(deltasCliped))*clipDelta)
+				self.deltas = deltasCliped
+			else:
+				self.loss = tf.reduce_mean(tf.square(self.deltas)/2)
 
-		self.optim = tf.train.RMSPropOptimizer(
-				learningRate, decay=0.95,
-				epsilon=0.01, centered=True)
+			self.optim = tf.train.RMSPropOptimizer(
+					learningRate, decay=0.95,
+					epsilon=0.01, centered=True)
 
-		self.grads = self.optim.compute_gradients(self.loss,
-				var_list=net.paras)
+			self.grads = self.optim.compute_gradients(self.loss,
+					var_list=net.paras)
 
-		self.applyGrads = self.optim.apply_gradients(self.grads)
+			self.applyGrads = self.optim.apply_gradients(self.grads)

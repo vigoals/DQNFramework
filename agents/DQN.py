@@ -9,8 +9,8 @@ import numpy as np
 import gameBuf
 
 class DQN(BaseAgent):
-	def __init__(self):
-		super(AtariDQN, self).__init__(opt)
+	def __init__(self, opt):
+		super(DQN, self).__init__(opt)
 		# GPU 不会全部占用
 		config = tf.ConfigProto()
 		# config.log_device_placement = True
@@ -41,14 +41,14 @@ class DQN(BaseAgent):
 					self.nActions, linearLayers=(512, 512),
 					sess=self.sess, name='QNetwork')
 
-			if targetFreq > 0:
+			if self.targetFreq > 0:
 				self.QTarget = Network(self.stateDim,
 					self.nActions, linearLayers=(512, 512),
 					sess=self.sess, name='QTarget')
 			else:
 				self.QTarget = self.QNetwork
 
-			self.optimizer = Optimizer(self.QTarget, self.learningRate,
+			self.optimizer = Optimizer(self.QNetwork, self.learningRate,
 					self.nActions, self.clipDelta)
 
 			self.sess.run(tf.global_variables_initializer())
@@ -71,7 +71,7 @@ class DQN(BaseAgent):
 		if np.random.rand() <= ep:
 			return np.random.randint(self.nActions), 0
 		else:
-			q = self.q([state]).reshape(-1)
+			q = self.q(state).reshape(-1)
 			action = np.argmax(q)
 			return action, q
 
@@ -81,19 +81,22 @@ class DQN(BaseAgent):
 			r = min(r, self.maxReward) if self.maxReward is not None else r
 			r = max(r, self.minReward) if self.minReward is not None else r
 			self.gameBuf.setReward(r)
+
+		observation = np.array(observation)
+		mean = (self.stateLow + self.stateHigh)/2
+		range_ = (self.stateHigh - self.stateLow)/2
+		state = (observation - mean)/range_
+
+		if not eval_:
+			self.gameBuf.add(step, state, terminal)
+			state = self.gameBuf.getState()
+
 		return state
 
 	def perceive(self, step, observation, reward, terminal, ep, eval_):
-
-		screen = self.preprocess(step, observation, reward, terminal, eval_)
-		state = None
+		state = self.preprocess(step, observation, reward, terminal, eval_)
 		if not eval_:
-			self.gameBuf.add(step, screen, terminal)
 			self.step = step
-			state = self.gameBuf.getState()
-		else:
-			self.evalBuf.add(step, screen, terminal)
-			state = self.evalBuf.getState()
 
 		action, q = self.policy(state, ep)
 
@@ -114,14 +117,14 @@ class DQN(BaseAgent):
 
 		return action, q
 
-	# def trainerRun(self, state, targets, action):
-	# 	deltas, _ = self.sess.run(
-	# 			(self.trainer['deltas'], self.trainer['updateGrads']),
-	# 			feed_dict={self.QNetwork['inputPH'] : state,
-	# 			self.trainer['targetsPH'] : targets,
-	# 			self.trainer['actionPH'] : action})
-	#
-	# 	return np.abs(deltas).mean()
+	def trainerRun(self, state, targets, action):
+		deltas, _ = self.sess.run(
+				(self.optimizer.deltas, self.optimizer.applyGrads),
+				feed_dict={self.QNetwork.input : state,
+				self.optimizer.targetsPH : targets,
+				self.optimizer.actionPH : action})
+
+		return np.abs(deltas).mean()
 
 	def computTargets(self, batch):
 		state = batch['state']
@@ -141,13 +144,14 @@ class DQN(BaseAgent):
 		batch = self.gameBuf.sample(k)
 		state, targets, action = self.computTargets(batch)
 
-		# deltas, q, grads = self.sess.run(
-		# 		(self.trainer['deltas'], self.QNetwork['net'],
-		# 		self.trainer['grads']),
-		# 		feed_dict={self.QNetwork['inputPH'] : state,
-		# 		self.trainer['targetsPH'] : targets,
-		# 		self.trainer['actionPH'] : action})
-
+		deltas, q, grads = self.sess.run(
+				(self.optimizer.deltas,
+				self.QNetwork.output,
+				self.optimizer.grads),
+				feed_dict={self.QNetwork.input : state,
+				self.optimizer.targetsPH : targets,
+				self.optimizer.actionPH : action})
+				
 		return deltas, q, grads, targets
 
 	def train(self):
@@ -156,7 +160,13 @@ class DQN(BaseAgent):
 		self.trainerRun(state, targets, action)
 
 	def report(self):
-		pass
+		if len(self.gameBuf) > 1:
+			deltas, q, grads, _ = self.computeDeltas()
+			print 'TD:%10.6f' % np.abs(deltas).mean()
+			print 'deltas mean:%10.6f' % deltas.mean()
+			print 'deltas std:%10.6f' % deltas.std()
+			print 'Q mean:%10.6f' % q.mean()
+			print 'Q std:%10.6f' % q.std()
 
 	def save(self, path, tag=None):
 		pass
