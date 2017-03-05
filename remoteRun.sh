@@ -9,7 +9,7 @@ REMOTE_PORT=22
 ENV="breakout"
 GPUID=0
 DEVICE="/gpu:"$GPUID
-SAVEPATH="./save-"$ENV"-"$GPUID
+SAVEPATH="./save-"$ENV"-"$GPUID"-"$RANDOM
 OPT="opts/atari.json"
 
 LOG=$SAVEPATH"/log.txt"

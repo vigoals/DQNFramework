@@ -35,6 +35,7 @@ class DQN(BaseAgent):
 		self.convLayers = opt.get('convLayers')
 		self.convShape = opt.get('convShape')
 		self.linearLayers = opt.get('linearLayers')
+		self.maxScale = opt.get('maxScale', 10)
 
 		exec('Buf = ' + opt.get('buf'))
 		self.gameBuf = Buf(opt)
@@ -96,7 +97,8 @@ class DQN(BaseAgent):
 		mean = (self.stateLow + self.stateHigh)/2
 		scale = (self.stateHigh - self.stateLow)/2
 		# maxScale
-		scale[scale > 10] = 10
+		if self.maxScale is not None:
+			scale[scale > self.maxScale] = self.maxScale
 		state = (observation - mean)/scale
 
 		if not eval_:
