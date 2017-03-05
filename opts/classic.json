@@ -3,6 +3,7 @@
     "gameEnv" : "gameEnv.GymEnv",
 	"agent" : "agents.DQN",
 	"buf" : "gameBuf.BaseBuf",
+	"linearLayers" : [512, 512],
 	"render" : false,
 	"steps" : 1e7,
 	"epsEnd" : 0.1,

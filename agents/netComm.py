@@ -80,14 +80,14 @@ class Network(object):
 			lastOp = self.input
 
 			if self.convLayers is not None:
-				lastOp = tf.reshape([-1] + self.convShape)
+				lastOp = tf.reshape(lastOp ,[-1] + self.convShape)
 
 				for i, l in enumerate(self.convLayers):
 					name = 'conv' + str(i)
 					lastOp, w, b = conv2d(lastOp,
-							self.convLayers[0],	# outputSize
-							self.convLayers[1],	# kernelSize
-							self.convLayers[2],	# strides
+							l[0],	# outputSize
+							l[1],	# kernelSize
+							l[2],	# strides
 							activation=tf.nn.relu, name=name)
 					self.paras.append(w)
 					self.paras.append(b)

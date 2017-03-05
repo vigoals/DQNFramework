@@ -32,18 +32,28 @@ class DQN(BaseAgent):
 		self.targetFreq = opt.get('targetFreq', 1000)
 		self.batchSize = opt.get('batchSize', 32)
 		self.evalBatchSize = opt.get('evalBatchSize', 100)
+		self.convLayers = opt.get('convLayers')
+		self.convShape = opt.get('convShape')
+		self.linearLayers = opt.get('linearLayers')
 
-		self.gameBuf = gameBuf.BaseBuf(opt)
+		exec('Buf = ' + opt.get('buf'))
+		self.gameBuf = Buf(opt)
 		self.step = None
 
 		with tf.device(self.device):
 			self.QNetwork = Network(self.stateDim,
-					self.nActions, linearLayers=(512, 512),
+					self.nActions,
+					convLayers=self.convLayers,
+					convShape=self.convShape,
+					linearLayers=self.linearLayers,
 					sess=self.sess, name='QNetwork')
 
 			if self.targetFreq > 0:
 				self.QTarget = Network(self.stateDim,
-					self.nActions, linearLayers=(512, 512),
+					self.nActions,
+					convLayers=self.convLayers,
+					convShape=self.convShape,
+					linearLayers=self.linearLayers,
 					sess=self.sess, name='QTarget')
 			else:
 				self.QTarget = self.QNetwork
@@ -89,7 +99,6 @@ class DQN(BaseAgent):
 
 		if not eval_:
 			self.gameBuf.add(step, state, terminal)
-			state = self.gameBuf.getState()
 
 		return state
 
@@ -151,7 +160,7 @@ class DQN(BaseAgent):
 				feed_dict={self.QNetwork.input : state,
 				self.optimizer.targetsPH : targets,
 				self.optimizer.actionPH : action})
-				
+
 		return deltas, q, grads, targets
 
 	def train(self):
