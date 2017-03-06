@@ -6,7 +6,6 @@ import tensorflow as tf
 from netComm import *
 from baseAgent import BaseAgent
 import numpy as np
-import gameBuf
 
 class DQN(BaseAgent):
 	def __init__(self, opt):
@@ -37,6 +36,8 @@ class DQN(BaseAgent):
 		self.linearLayers = opt.get('linearLayers')
 		self.maxScale = opt.get('maxScale', 10)
 
+		tmp = opt.get('buf').split('.')
+		exec('import ' + tmp[0])
 		exec('Buf = ' + opt.get('buf'))
 		self.gameBuf = Buf(opt)
 		self.step = None

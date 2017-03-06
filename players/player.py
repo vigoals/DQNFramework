@@ -1,7 +1,5 @@
 #coding=utf-8
 
-import gameEnv
-import agents
 import time
 
 def mergeList(l):
@@ -15,6 +13,8 @@ def mergeList(l):
 
 class Player(object):
 	def __init__(self, opt, agent=None):
+		tmp = opt.get('gameEnv').split('.')
+		exec('import ' + tmp[0])
 		exec('Env = ' + opt.get('gameEnv'))
 		self.env = opt.get('env')
 		self.actrep = opt.get('actrep')
@@ -28,7 +28,10 @@ class Player(object):
 			opt.set('stateLow', mergeList(osl))
 			opt.set('stateHigh', mergeList(osh))
 
+		tmp = opt.get('agent').split('.')
+		exec('import ' + tmp[0])
 		exec('AGENT = ' + opt.get('agent'))
+
 		self.agent = agent if agent is not None else AGENT(opt)
 
 		# run 所要用到的数据

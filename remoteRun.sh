@@ -1,7 +1,7 @@
 #!/bin/bash
 FILES="agents gameBuf gameEnv players test tools opts *.py *.json"
 
-REMOTE_NAME="cse.sysu.edu.cn"
+REMOTE_NAME="192.168.2.153" # cse.sysu.edu.cn
 REMOTE_USER="vigoals"
 REMOTE_DIR="/home/vigoals/remoteRun/DQNFramework"
 REMOTE_PORT=22
