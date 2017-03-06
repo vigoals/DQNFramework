@@ -34,6 +34,8 @@ class DQN(BaseAgent):
 		self.convLayers = opt.get('convLayers')
 		self.convShape = opt.get('convShape')
 		self.linearLayers = opt.get('linearLayers')
+		self.dueling = opt.get('dueling', False)
+		self.doubleDQN = opt.get('doubleDQN', False)
 		self.maxScale = opt.get('maxScale', 10)
 
 		tmp = opt.get('buf').split('.')
@@ -43,24 +45,26 @@ class DQN(BaseAgent):
 		self.step = None
 
 		with tf.device(self.device):
-			self.QNetwork = Network(self.stateDim,
+			self.QNetwork = DQNNetwork(self.stateDim,
 					self.nActions,
 					convLayers=self.convLayers,
 					convShape=self.convShape,
 					linearLayers=self.linearLayers,
+					dueling=self.dueling,
 					sess=self.sess, name='QNetwork')
 
 			if self.targetFreq > 0:
-				self.QTarget = Network(self.stateDim,
+				self.QTarget = DQNNetwork(self.stateDim,
 					self.nActions,
 					convLayers=self.convLayers,
 					convShape=self.convShape,
 					linearLayers=self.linearLayers,
+					dueling=self.dueling,
 					sess=self.sess, name='QTarget')
 			else:
 				self.QTarget = self.QNetwork
 
-			self.optimizer = Optimizer(self.QNetwork, self.learningRate,
+			self.optimizer = DQNOptimizer(self.QNetwork, self.learningRate,
 					self.nActions, self.clipDelta)
 
 			self.sess.run(tf.global_variables_initializer())
@@ -150,9 +154,16 @@ class DQN(BaseAgent):
 		terminal = batch['terminal']
 		stateNext = batch['stateNext']
 
-		q2 = self.tq(stateNext)
-		q2Max = q2.max(1)
-		targets = reward + self.discount*(1 - terminal)*q2Max
+		targets = None
+		if not self.doubleDQN:
+			q2 = self.tq(stateNext)
+			q2Max = q2.max(1)
+			targets = reward + self.discount*(1 - terminal)*q2Max
+		else:
+			q2 = self.tq(stateNext)
+			q2a = self.q(stateNext).argmax(1)
+			q2Max = q2[:, q2a][:, 0]
+			targets = reward + self.discount*(1 - terminal)*q2Max
 
 		return state, targets, action
 

@@ -48,7 +48,7 @@ def linear(input_, outputSize, stddev=None, activation=None, name='linear'):
 			return tf.matmul(input_, weight) + bias, weight, bias
 			# return tf.nn.bias_add(tf.matmul(input_, weight), bias), weight, bias
 
-class Network(object):
+class DQNNetwork(object):
 	"""Network"""
 	def __init__(self, inputDim, outputDim,
 			convLayers=None, convShape=None,
@@ -103,9 +103,20 @@ class Network(object):
 					self.paras.append(w)
 					self.paras.append(b)
 
-			lastOp, w, b = linear(lastOp, self.outputDim, name='output')
-			self.paras.append(w)
-			self.paras.append(b)
+			if not self.dueling:
+				lastOp, w, b = linear(lastOp, self.outputDim, name='output')
+				self.paras.append(w)
+				self.paras.append(b)
+			else:
+				duelA, w, b = linear(lastOp, self.outputDim, name='duelA')
+				self.paras.append(w)
+				self.paras.append(b)
+				duelV, w, b = linear(lastOp, 1, name='duelV')
+				self.paras.append(w)
+				self.paras.append(b)
+
+				lastOp = duelV + \
+						(duelA - tf.reduce_mean(duelA, 1, keep_dims=True))
 
 			# 用于设置paras
 			self.parasAssigns = []
@@ -130,7 +141,7 @@ class Network(object):
 	def forward(self, input_):
 		return self.sess.run(self.output, feed_dict={self.input:input_})
 
-class Optimizer(object):
+class DQNOptimizer(object):
 	def __init__(self, net, learningRate,
 			nActions, clipDelta=None, name='optimizer'):
 		with tf.variable_scope(name):
