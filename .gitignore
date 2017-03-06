@@ -1,4 +1,4 @@
 *.pyc
 save/
 save*/
-./remoteRun.sh
+remoteRun.sh
