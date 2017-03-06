@@ -65,6 +65,8 @@ class DQN(BaseAgent):
 			self.sess.run(tf.global_variables_initializer())
 			self.updateTarget()
 
+		self.saver = tf.train.Saver(self.QNetwork.paras)
+
 	def updateTarget(self):
 		paras = self.QNetwork.getParas()
 		self.QTarget.setParas(paras)
@@ -120,13 +122,13 @@ class DQN(BaseAgent):
 			# train
 			if step > self.learnStart \
 					and self.trainFreq > 0 \
-					and step%self.trainFreq == 0:
+					and step%self.trainFreq == self.trainFreq - 1:
 				self.train()
 
 			# update target
 			if step > self.learnStart \
 					and self.targetFreq > 0 \
-					and step%self.targetFreq == 0:
+					and step%self.targetFreq == self.targetFreq - 1:
 				self.updateTarget()
 
 		return action, q
@@ -175,7 +177,7 @@ class DQN(BaseAgent):
 
 	def report(self):
 		if len(self.gameBuf) > 1:
-			deltas, q, grads, _ = self.computeDeltas()
+			deltas, q, _, _ = self.computeDeltas()
 			print 'TD:%10.6f' % np.abs(deltas).mean()
 			print 'deltas mean:%10.6f' % deltas.mean()
 			print 'deltas std:%10.6f' % deltas.std()
@@ -183,7 +185,18 @@ class DQN(BaseAgent):
 			print 'Q std:%10.6f' % q.std()
 
 	def save(self, path, tag=None):
-		pass
+		if not tag:
+			path = path + '/agent'
+		else:
+			path = path + '/agent-' + tag
+
+		self.saver.save(self.sess, path)
 
 	def load(self, path, tag=None):
-		pass
+		if not tag:
+			path = path + '/agent'
+		else:
+			path = path + '/agent-' + tag
+
+		self.saver.restore(self.sess, path)
+		self.updateTarget()
