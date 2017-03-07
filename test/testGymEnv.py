@@ -8,7 +8,7 @@ import numpy as np
 # opt = OptionParser()
 import gameEnv
 
-game = gameEnv.GymEnv('CartPole-v0')
+game = gameEnv.GymEnv('Acrobot-v1')
 
 print game.getActions()
 print game.getObservationSpace()
@@ -28,6 +28,7 @@ while True:
 		observation, reward, terminal = game.newGame()
 		totalReward += episodeReward
 		episode += 1
+		print episodeReward, totalReward, episode
 		if episode >= 30:
 			break
 		episodeReward = 0

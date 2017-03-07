@@ -189,12 +189,31 @@ class DQN(BaseAgent):
 
 	def report(self):
 		if len(self.gameBuf) > 1:
-			deltas, q, _, _ = self.computeDeltas()
+			deltas, q, grads, _ = self.computeDeltas()
 			print 'TD:%10.6f' % np.abs(deltas).mean()
 			print 'deltas mean:%10.6f' % deltas.mean()
 			print 'deltas std:%10.6f' % deltas.std()
 			print 'Q mean:%10.6f' % q.mean()
 			print 'Q std:%10.6f' % q.std()
+
+			paras = self.QNetwork.getParas()
+			means = []
+			stds = []
+			print 'Paras info:'
+			for w in paras:
+				means.append(w.mean())
+				stds.append(w.std())
+			print 'paras mean: ' + str(means)
+			print 'paras std: ' + str(stds)
+
+			means = []
+			stds = []
+			for k in grads:
+				means.append(k[0].mean())
+				stds.append(k[0].std())
+
+			print 'grads mean: ' + str(means)
+			print 'grads std: ' + str(stds)
 
 	def save(self, path, tag=None):
 		if not tag:
