@@ -3,13 +3,17 @@
 import tensorflow as tf
 import numpy as np
 
-def getWeights(shape, stddev=0.01, dtype=tf.float32, name='weight'):
-	return tf.Variable(
-			tf.truncated_normal(shape, stddev=stddev, dtype=dtype), name=name)
+def getWeights(shape, stddev=0.01, dtype=tf.float32, name='weights'):
+	return tf.get_variable(name, shape,
+        initializer=tf.random_uniform_initializer(-stddev, stddev))
+	# return tf.Variable(
+	# 		tf.truncated_normal(shape, stddev=stddev, dtype=dtype), name=name)
 
 def getBias(shape, stddev=0.01, dtype=tf.float32, name='bias'):
-	return tf.Variable(
-			tf.truncated_normal(shape, stddev=stddev, dtype=dtype), name=name)
+	return tf.get_variable(name, shape,
+        initializer=tf.random_uniform_initializer(-stddev, stddev))
+	# return tf.Variable(
+	# 		tf.truncated_normal(shape, stddev=stddev, dtype=dtype), name=name)
 
 def conv2d(input_, outputDim, kernelSize,
 		strides, stddev=None, activation=None, name='conv2d'):
@@ -163,11 +167,11 @@ class DQNOptimizer(object):
 			else:
 				self.loss = tf.reduce_mean(tf.square(self.deltas)/2)
 
-			# self.optim = tf.train.RMSPropOptimizer(
-			# 		learningRate, decay=0.95,
-			# 		epsilon=0.01, centered=True)
+			self.optim = tf.train.RMSPropOptimizer(
+					learningRate, decay=0.95,
+					epsilon=0.01, centered=True)
 
-			self.optim = tf.train.RMSPropOptimizer(learningRate, epsilon=0.01)
+			# self.optim = tf.train.RMSPropOptimizer(learningRate, epsilon=0.01)
 
 			self.grads = self.optim.compute_gradients(self.loss,
 					var_list=net.paras)

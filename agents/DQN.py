@@ -197,23 +197,23 @@ class DQN(BaseAgent):
 			print 'Q std:%10.6f' % q.std()
 
 			paras = self.QNetwork.getParas()
-			means = []
-			stds = []
+			norms = []
+			maxs = []
 			print 'Paras info:'
 			for w in paras:
-				means.append(w.mean())
-				stds.append(w.std())
-			print 'paras mean: ' + str(means)
-			print 'paras std: ' + str(stds)
+				norms.append(np.abs(w).mean())
+				maxs.append(np.abs(w).max())
+			print 'paras norms: ' + str(norms)
+			print 'paras maxs:' + str(maxs)
 
-			means = []
-			stds = []
-			for k in grads:
-				means.append(k[0].mean())
-				stds.append(k[0].std())
-
-			print 'grads mean: ' + str(means)
-			print 'grads std: ' + str(stds)
+			norms = []
+			maxs = []
+			print 'Grads info:'
+			for w in grads:
+				norms.append(np.abs(w[0]).mean())
+				maxs.append(np.abs(w[0]).max())
+			print 'grads norms: ' + str(norms)
+			print 'grads maxs:' + str(maxs)
 
 	def save(self, path, tag=None):
 		if not tag:
