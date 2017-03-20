@@ -52,6 +52,89 @@ def linear(input_, outputSize, stddev=None, activation=None, name='linear'):
 			return tf.matmul(input_, weight) + bias, weight, bias
 			# return tf.nn.bias_add(tf.matmul(input_, weight), bias), weight, bias
 
+# def rmsprop(varList, learningRate, decay=0.95,
+# 		epsilon=0.01, centered=True, name='rmsprop'):
+# 	self.gradPH = []
+# 	self.meanGrad = []
+# 	self.meanSquare = []
+#
+# 	self.updateGrade = []
+#
+# 	with tf.variable_scope(name):
+# 		for v in varList:
+# 			self.gradPH = tf.placeholder(tf.float32, v.get_shape().as_list())
+# 			if centered:
+# 				mg = tf.get_variable(name, v.get_shape().as_list(),
+# 			        initializer=tf.zeros_initializer())
+# 				self.meanGrad.append(mg)
+#
+# 			ms = tf.get_variable(name, v.get_shape().as_list(),
+# 		        initializer=tf.zeros_initializer())
+# 			self.meanSquare.append(ms)
+#
+#
+#
+# 	return self.gradPH, self.meanGrad, self.meanSquare
+
+class RMSPropOptimizer(object):
+	"""RMSPropOptimizer"""
+	def __init__(self, varList, learningRate, loss, decay=0.95,
+			epsilon=0.01, centered=False, sess=None, name='rmsprop'):
+		super(RMSPropOptimizer, self).__init__()
+
+		self.varList = varList
+		self.learningRate = learningRate
+		self.loss = loss
+		self.decay = decay
+		self.epsilon = epsilon
+		self.centered = centered
+		self.sess = sess
+		self.name = name
+
+		self.grads = []
+		# self.meanGrad = []
+		self.meanSquare = []
+
+		self.updateMeanSquare = []
+		self.updateGrade = []
+
+		self.build()
+
+	def build(self):
+		with tf.variable_scope(self.name):
+			i = 0
+			for v in self.varList:
+				g = tf.gradients(self.loss, v)[0]
+				self.grads.append(g)
+
+				# if centered:
+				# 	mg = tf.get_variable(name, v.get_shape().as_list(),
+				#         initializer=tf.zeros_initializer())
+				# 	self.meanGrad.append(mg)
+
+				ms = tf.get_variable('ms-' + str(i), v.get_shape().as_list(),
+			        initializer=tf.zeros_initializer())
+				self.meanSquare.append(ms)
+
+				op = tf.assign(ms, self.decay*ms + (1-self.decay)*tf.pow(g, 2))
+				self.updateMeanSquare.append(op)
+
+				op = tf.assign(v,
+						v - self.learningRate/tf.sqrt(ms + self.epsilon)*g)
+				self.updateGrade.append(op)
+				i += 1
+
+	def computeGrads(self, feed_dict={}):
+		return self.sess.run(self.grads, feed_dict=feed_dict)
+
+	def applyGrads(self, feed_dict={}):
+		self.sess.run(
+				self.updateMeanSquare + self.updateGrade, feed_dict=feed_dict)
+		# self.sess.run(self.updateGrade)
+
+	def getMeanSquare(self):
+		return self.sess.run(self.meanSquare)
+
 class DQNNetwork(object):
 	"""Network"""
 	def __init__(self, inputDim, outputDim,
@@ -72,6 +155,8 @@ class DQNNetwork(object):
 		config = tf.ConfigProto()
 		config.gpu_options.allow_growth = True
 		self.sess = sess if sess is not None else tf.Session(config)
+		self.layers = []
+		self.reshape = None
 
 		self.output = self.buidNet()
 
@@ -85,6 +170,7 @@ class DQNNetwork(object):
 
 			if self.convLayers is not None:
 				lastOp = tf.reshape(lastOp ,[-1] + self.convShape)
+				self.reshape = lastOp
 
 				for i, l in enumerate(self.convLayers):
 					name = 'conv' + str(i)
@@ -95,6 +181,7 @@ class DQNNetwork(object):
 							activation=tf.nn.relu, name=name)
 					self.paras.append(w)
 					self.paras.append(b)
+					self.layers.append(lastOp)
 
 				shape = lastOp.get_shape().as_list()[1:]
 				lastOp = tf.reshape(lastOp,
@@ -106,6 +193,7 @@ class DQNNetwork(object):
 							activation=tf.nn.relu, name=name)
 					self.paras.append(w)
 					self.paras.append(b)
+					self.layers.append(lastOp)
 
 			if not self.dueling:
 				lastOp, w, b = linear(lastOp, self.outputDim, name='output')
@@ -167,13 +255,15 @@ class DQNOptimizer(object):
 			else:
 				self.loss = tf.reduce_mean(tf.square(self.deltas)/2)
 
-			self.optim = tf.train.RMSPropOptimizer(
-					learningRate, decay=0.95,
-					epsilon=0.01, centered=True)
+			# self.optim = tf.train.RMSPropOptimizer(
+			# 		learningRate, decay=0.95,
+			# 		epsilon=0.01, centered=True)
 
-			# self.optim = tf.train.RMSPropOptimizer(learningRate, epsilon=0.01)
+			# self.optim = tf.train.RMSPropOptimizer(learningRate)
+			#
+			# self.grads = self.optim.compute_gradients(self.loss,
+			# 		var_list=net.paras)
+			#
+			# self.applyGrads = self.optim.apply_gradients(self.grads)
 
-			self.grads = self.optim.compute_gradients(self.loss,
-					var_list=net.paras)
-
-			self.applyGrads = self.optim.apply_gradients(self.grads)
+			self.optim = RMSPropOptimizer(net.paras, learningRate, self.loss)
