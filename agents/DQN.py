@@ -138,14 +138,14 @@ class DQN(BaseAgent):
 
 		return action, q
 
-	def trainerRun(self, state, targets, action):
-		deltas, _ = self.sess.run(
-				(self.optimizer.deltas, self.optimizer.applyGrads),
-				feed_dict={self.QNetwork.input : state,
-				self.optimizer.targetsPH : targets,
-				self.optimizer.actionPH : action})
-
-		return np.abs(deltas).mean()
+	# def trainerRun(self, state, targets, action):
+	# 	deltas, _ = self.sess.run(
+	# 			(self.optimizer.deltas, self.optimizer.applyGrads),
+	# 			feed_dict={self.QNetwork.input : state,
+	# 			self.optimizer.targetsPH : targets,
+	# 			self.optimizer.actionPH : action})
+	#
+	# 	return np.abs(deltas).mean()
 
 	def computTargets(self, batch):
 		state = batch['state']
@@ -167,53 +167,94 @@ class DQN(BaseAgent):
 
 		return state, targets, action
 
-	def computeDeltas(self, k=None):
-		k = k or self.evalBatchSize
-		batch = self.gameBuf.sample(k)
-		state, targets, action = self.computTargets(batch)
-
-		deltas, q, grads = self.sess.run(
-				(self.optimizer.deltas,
-				self.QNetwork.output,
-				self.optimizer.grads),
-				feed_dict={self.QNetwork.input : state,
-				self.optimizer.targetsPH : targets,
-				self.optimizer.actionPH : action})
-
-		return deltas, q, grads, targets
+	# def computeDeltas(self, k=None):
+	# 	k = k or self.evalBatchSize
+	# 	batch = self.gameBuf.sample(k)
+	# 	state, targets, action = self.computTargets(batch)
+	#
+	# 	deltas, q, grads = self.sess.run(
+	# 			(self.optimizer.deltas,
+	# 			self.QNetwork.output,
+	# 			self.optimizer.grads),
+	# 			feed_dict={self.QNetwork.input : state,
+	# 			self.optimizer.targetsPH : targets,
+	# 			self.optimizer.actionPH : action})
+	#
+	# 	return deltas, q, grads, targets
 
 	def train(self):
 		batch = self.gameBuf.sample(self.batchSize)
 		state, targets, action = self.computTargets(batch)
-		self.trainerRun(state, targets, action)
+		# self.trainerRun(state, targets, action)
+		self.optimizer.train(state, targets, action)
 
 	def report(self):
-		if len(self.gameBuf) > 1:
-			deltas, q, grads, _ = self.computeDeltas()
-			print 'TD:%10.6f' % np.abs(deltas).mean()
-			print 'deltas mean:%10.6f' % deltas.mean()
-			print 'deltas std:%10.6f' % deltas.std()
-			print 'Q mean:%10.6f' % q.mean()
-			print 'Q std:%10.6f' % q.std()
+		batch = self.gameBuf.sample(self.evalBatchSize)
+		state, targets, action = self.computTargets(batch)
 
-			paras = self.QNetwork.getParas()
-			norms = []
-			maxs = []
-			print 'Paras info:'
-			for w in paras:
-				norms.append(np.abs(w).mean())
-				maxs.append(np.abs(w).max())
-			print 'paras norms: ' + str(norms)
-			print 'paras maxs:' + str(maxs)
+		deltas, q, grads, ms = self.optimizer.getInfo(state, targets, action)
+		# deltas, q, grads, _ = self.computeDeltas()
 
-			norms = []
-			maxs = []
-			print 'Grads info:'
-			for w in grads:
-				norms.append(np.abs(w[0]).mean())
-				maxs.append(np.abs(w[0]).max())
-			print 'grads norms: ' + str(norms)
-			print 'grads maxs:' + str(maxs)
+		print 'TD:%10.6f' % np.abs(deltas).mean()
+		print 'deltas mean:%10.6f' % deltas.mean()
+		print 'deltas std:%10.6f' % deltas.std()
+		print 'Q mean:%10.6f' % q.mean()
+		print 'Q std:%10.6f' % q.std()
+
+		paras = self.QNetwork.getParas()
+		norms = []
+		maxs = []
+		print 'Paras info:'
+		for w in paras:
+			norms.append(np.abs(w).mean())
+			maxs.append(np.abs(w).max())
+		print 'paras norms: ' + str(norms)
+		print 'paras maxs:' + str(maxs)
+
+		norms = []
+		maxs = []
+		print 'Grads info:'
+		for w in grads:
+			norms.append(np.abs(w).mean())
+			maxs.append(np.abs(w).max())
+		print 'grads norms: ' + str(norms)
+		print 'grads maxs:' + str(maxs)
+
+		norms = []
+		maxs = []
+		print 'MeanSquare info:'
+		for w in ms:
+			norms.append(np.abs(w).mean())
+			maxs.append(np.abs(w).max())
+		print 'meanSquare norms: ' + str(norms)
+		print 'meanSquare maxs:' + str(maxs)
+
+		# if len(self.gameBuf) > 1:
+		# 	deltas, q, grads, _ = self.computeDeltas()
+		# 	print 'TD:%10.6f' % np.abs(deltas).mean()
+		# 	print 'deltas mean:%10.6f' % deltas.mean()
+		# 	print 'deltas std:%10.6f' % deltas.std()
+		# 	print 'Q mean:%10.6f' % q.mean()
+		# 	print 'Q std:%10.6f' % q.std()
+		#
+		# 	paras = self.QNetwork.getParas()
+		# 	norms = []
+		# 	maxs = []
+		# 	print 'Paras info:'
+		# 	for w in paras:
+		# 		norms.append(np.abs(w).mean())
+		# 		maxs.append(np.abs(w).max())
+		# 	print 'paras norms: ' + str(norms)
+		# 	print 'paras maxs:' + str(maxs)
+		#
+		# 	norms = []
+		# 	maxs = []
+		# 	print 'Grads info:'
+		# 	for w in grads:
+		# 		norms.append(np.abs(w[0]).mean())
+		# 		maxs.append(np.abs(w[0]).max())
+		# 	print 'grads norms: ' + str(norms)
+		# 	print 'grads maxs:' + str(maxs)
 
 	def save(self, path, tag=None):
 		if not tag:

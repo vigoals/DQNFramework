@@ -12,7 +12,7 @@ class GymEnv(Env):
 	def _reset(self):
 		self.game = gym.make(self.env)
 		try:
-			assert not isinstance(self.game, gym.envs.atari.AtariEnv), \
+			assert not isinstance(self.game.env, gym.envs.atari.AtariEnv), \
 					"atari游戏请用AtariEnv"
 		except AttributeError:
 			pass

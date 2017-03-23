@@ -18,7 +18,7 @@ class AtariEnv(Env):
 
 	def _reset(self):
 		self.game = gym.make(envFormat(self.env))
-		assert type(self.game) == gym.envs.atari.AtariEnv, "只支持atari游戏"
+		assert type(self.game.env) == gym.envs.atari.AtariEnv, "只支持atari游戏"
 		self.actionSpace = self.game.action_space
 		observation = self.game.reset()
 		self.lives = 0

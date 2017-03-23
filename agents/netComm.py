@@ -236,6 +236,9 @@ class DQNNetwork(object):
 class DQNOptimizer(object):
 	def __init__(self, net, learningRate,
 			nActions, clipDelta=None, name='optimizer'):
+		self.net = net
+		self.sess = net.sess
+
 		with tf.variable_scope(name):
 			self.targetsPH = tf.placeholder(tf.float32, [None], name='targetsPH')
 			self.actionPH = tf.placeholder(tf.int32, [None], name='actionPH')
@@ -255,15 +258,22 @@ class DQNOptimizer(object):
 			else:
 				self.loss = tf.reduce_mean(tf.square(self.deltas)/2)
 
-			# self.optim = tf.train.RMSPropOptimizer(
-			# 		learningRate, decay=0.95,
-			# 		epsilon=0.01, centered=True)
+			self.optim = RMSPropOptimizer(
+					net.paras, learningRate, self.loss, sess=self.sess)
 
-			# self.optim = tf.train.RMSPropOptimizer(learningRate)
-			#
-			# self.grads = self.optim.compute_gradients(self.loss,
-			# 		var_list=net.paras)
-			#
-			# self.applyGrads = self.optim.apply_gradients(self.grads)
+	def train(self, state, targets, action):
+		self.optim.applyGrads({self.net.input : state,
+				self.targetsPH : targets,
+				self.actionPH : action})
 
-			self.optim = RMSPropOptimizer(net.paras, learningRate, self.loss)
+	def getInfo(self, state, targets, action):
+		deltas, q, grads, ms = self.sess.run((self.deltas,
+				self.net.output,
+				self.optim.grads,
+				self.optim.meanSquare),
+				feed_dict = {
+					self.net.input : state,
+					self.targetsPH : targets,
+					self.actionPH : action
+				})
+		return deltas, q, grads, ms
