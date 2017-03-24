@@ -1,10 +1,13 @@
 #!/usr/bin/python
 #coding=utf-8
 
+import os
+print "PID:%10d" % os.getpid()
+
 from optionParser import OptionParser
 import players
 import time
-import os
+
 
 if __name__ == '__main__':
 	opt = OptionParser()
@@ -16,7 +19,6 @@ if __name__ == '__main__':
 
 	player = players.ExplorePlayer(opt)
 	print "Start at %s" % time.asctime()
-	print "PID:%5d" % os.getpid()
 	print str(opt)
 	opt.save(savePath)
 	player.run(opt.get('steps'))

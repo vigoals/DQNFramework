@@ -52,30 +52,6 @@ def linear(input_, outputSize, stddev=None, activation=None, name='linear'):
 			return tf.matmul(input_, weight) + bias, weight, bias
 			# return tf.nn.bias_add(tf.matmul(input_, weight), bias), weight, bias
 
-# def rmsprop(varList, learningRate, decay=0.95,
-# 		epsilon=0.01, centered=True, name='rmsprop'):
-# 	self.gradPH = []
-# 	self.meanGrad = []
-# 	self.meanSquare = []
-#
-# 	self.updateGrade = []
-#
-# 	with tf.variable_scope(name):
-# 		for v in varList:
-# 			self.gradPH = tf.placeholder(tf.float32, v.get_shape().as_list())
-# 			if centered:
-# 				mg = tf.get_variable(name, v.get_shape().as_list(),
-# 			        initializer=tf.zeros_initializer())
-# 				self.meanGrad.append(mg)
-#
-# 			ms = tf.get_variable(name, v.get_shape().as_list(),
-# 		        initializer=tf.zeros_initializer())
-# 			self.meanSquare.append(ms)
-#
-#
-#
-# 	return self.gradPH, self.meanGrad, self.meanSquare
-
 class RMSPropOptimizer(object):
 	"""RMSPropOptimizer"""
 	def __init__(self, varList, learningRate, loss, decay=0.95,
@@ -92,11 +68,12 @@ class RMSPropOptimizer(object):
 		self.name = name
 
 		self.grads = []
-		# self.meanGrad = []
+		self.meanGrad = []
 		self.meanSquare = []
 
 		self.updateMeanSquare = []
-		self.updateGrade = []
+		self.updateMeanGrad = []
+		self.updateGrad = []
 
 		self.build()
 
@@ -107,21 +84,27 @@ class RMSPropOptimizer(object):
 				g = tf.gradients(self.loss, v)[0]
 				self.grads.append(g)
 
-				# if centered:
-				# 	mg = tf.get_variable(name, v.get_shape().as_list(),
-				#         initializer=tf.zeros_initializer())
-				# 	self.meanGrad.append(mg)
+				mg = tf.get_variable('mg-' + str(i), v.get_shape().as_list(),
+			        	initializer=tf.zeros_initializer())
+				self.meanGrad.append(mg)
+
+				op = tf.assign(mg, self.decay*mg + (1-self.decay)*g)
+				self.updateMeanGrad.append(op)
 
 				ms = tf.get_variable('ms-' + str(i), v.get_shape().as_list(),
-			        initializer=tf.zeros_initializer())
+			        	initializer=tf.zeros_initializer())
 				self.meanSquare.append(ms)
 
 				op = tf.assign(ms, self.decay*ms + (1-self.decay)*tf.pow(g, 2))
 				self.updateMeanSquare.append(op)
 
-				op = tf.assign(v,
-						v - self.learningRate/tf.sqrt(ms + self.epsilon)*g)
-				self.updateGrade.append(op)
+				if not self.centered:
+					op = tf.assign(v,
+							v - self.learningRate/tf.sqrt(ms + self.epsilon)*g)
+				else:
+					op = tf.assign(v,
+							v - self.learningRate/tf.sqrt(ms - tf.pow(mg, 2) + self.epsilon)*g)
+				self.updateGrad.append(op)
 				i += 1
 
 	def computeGrads(self, feed_dict={}):
@@ -129,11 +112,14 @@ class RMSPropOptimizer(object):
 
 	def applyGrads(self, feed_dict={}):
 		self.sess.run(
-				self.updateMeanSquare + self.updateGrade, feed_dict=feed_dict)
-		# self.sess.run(self.updateGrade)
+				self.updateMeanGrad + self.updateMeanSquare + self.updateGrad,
+				feed_dict=feed_dict)
 
 	def getMeanSquare(self):
 		return self.sess.run(self.meanSquare)
+
+	def getMeanGrad(self):
+		return self.sess.run(self.meanGrad)
 
 class DQNNetwork(object):
 	"""Network"""
@@ -252,28 +238,32 @@ class DQNOptimizer(object):
 				deltasCliped = tf.clip_by_value(
 						self.deltas, -clipDelta, clipDelta)
 
-				self.loss = tf.reduce_mean(tf.square(deltasCliped)/2
+				self.loss = tf.reduce_sum(tf.square(deltasCliped)/2 \
 						+ (tf.abs(self.deltas) - tf.abs(deltasCliped))*clipDelta)
 				self.deltas = deltasCliped
 			else:
-				self.loss = tf.reduce_mean(tf.square(self.deltas)/2)
+				self.loss = tf.reduce_sum(tf.square(self.deltas)/2)
 
-			self.optim = RMSPropOptimizer(
-					net.paras, learningRate, self.loss, sess=self.sess)
+			# self.optim = RMSPropOptimizer(
+			# 		net.paras, learningRate, self.loss,
+			# 		centered=True, sess=self.sess)
+
+			self.optim = tf.train.RMSPropOptimizer(learningRate,
+					decay=0.95, epsilon=0.01, centered=True)
+
+			self.grads = self.optim.compute_gradients(self.loss, net.paras)
+			self.applyGrads = self.optim.apply_gradients(self.grads)
 
 	def train(self, state, targets, action):
-		self.optim.applyGrads({self.net.input : state,
+		self.sess.run(self.applyGrads,
+				feed_dict={self.net.input : state,
 				self.targetsPH : targets,
 				self.actionPH : action})
 
 	def getInfo(self, state, targets, action):
-		deltas, q, grads, ms = self.sess.run((self.deltas,
+		deltas, q, grads = self.sess.run((self.deltas,
 				self.net.output,
-				self.optim.grads,
-				self.optim.meanSquare),
-				feed_dict = {
-					self.net.input : state,
-					self.targetsPH : targets,
-					self.actionPH : action
-				})
-		return deltas, q, grads, ms
+				self.grads),
+				feed_dict={})
+
+		return deltas, q, grads

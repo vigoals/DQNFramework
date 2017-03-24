@@ -23,10 +23,19 @@ sess.run(tf.global_variables_initializer())
 input_ = np.random.random((2, 10))
 output = np.random.random((2, 5))
 
-for i in range(10000):
+for i in range(5):
 	grad = optim.computeGrads({ph:input_, outPh:output})
 	# print grad
 	optim.applyGrads({ph:input_, outPh:output})
-	# print optim.getMeanSquare()
 
-	print sess.run(loss, {ph:input_, outPh:output})
+	print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+	print optim.getMeanGrad()
+	print '####'
+	print optim.getMeanSquare()
+
+	print
+	print
+	print
+	print
+
+	# print sess.run(loss, {ph:input_, outPh:output})

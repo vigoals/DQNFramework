@@ -167,21 +167,6 @@ class DQN(BaseAgent):
 
 		return state, targets, action
 
-	# def computeDeltas(self, k=None):
-	# 	k = k or self.evalBatchSize
-	# 	batch = self.gameBuf.sample(k)
-	# 	state, targets, action = self.computTargets(batch)
-	#
-	# 	deltas, q, grads = self.sess.run(
-	# 			(self.optimizer.deltas,
-	# 			self.QNetwork.output,
-	# 			self.optimizer.grads),
-	# 			feed_dict={self.QNetwork.input : state,
-	# 			self.optimizer.targetsPH : targets,
-	# 			self.optimizer.actionPH : action})
-	#
-	# 	return deltas, q, grads, targets
-
 	def train(self):
 		batch = self.gameBuf.sample(self.batchSize)
 		state, targets, action = self.computTargets(batch)
@@ -192,8 +177,7 @@ class DQN(BaseAgent):
 		batch = self.gameBuf.sample(self.evalBatchSize)
 		state, targets, action = self.computTargets(batch)
 
-		deltas, q, grads, ms = self.optimizer.getInfo(state, targets, action)
-		# deltas, q, grads, _ = self.computeDeltas()
+		deltas, q, grads = self.optimizer.getInfo(state, targets, action)
 
 		print 'TD:%10.6f' % np.abs(deltas).mean()
 		print 'deltas mean:%10.6f' % deltas.mean()
@@ -215,46 +199,10 @@ class DQN(BaseAgent):
 		maxs = []
 		print 'Grads info:'
 		for w in grads:
-			norms.append(np.abs(w).mean())
-			maxs.append(np.abs(w).max())
+			norms.append(np.abs(w).mean()/self.evalBatchSize)
+			maxs.append(np.abs(w).max()/self.evalBatchSize)
 		print 'grads norms: ' + str(norms)
 		print 'grads maxs:' + str(maxs)
-
-		norms = []
-		maxs = []
-		print 'MeanSquare info:'
-		for w in ms:
-			norms.append(np.abs(w).mean())
-			maxs.append(np.abs(w).max())
-		print 'meanSquare norms: ' + str(norms)
-		print 'meanSquare maxs:' + str(maxs)
-
-		# if len(self.gameBuf) > 1:
-		# 	deltas, q, grads, _ = self.computeDeltas()
-		# 	print 'TD:%10.6f' % np.abs(deltas).mean()
-		# 	print 'deltas mean:%10.6f' % deltas.mean()
-		# 	print 'deltas std:%10.6f' % deltas.std()
-		# 	print 'Q mean:%10.6f' % q.mean()
-		# 	print 'Q std:%10.6f' % q.std()
-		#
-		# 	paras = self.QNetwork.getParas()
-		# 	norms = []
-		# 	maxs = []
-		# 	print 'Paras info:'
-		# 	for w in paras:
-		# 		norms.append(np.abs(w).mean())
-		# 		maxs.append(np.abs(w).max())
-		# 	print 'paras norms: ' + str(norms)
-		# 	print 'paras maxs:' + str(maxs)
-		#
-		# 	norms = []
-		# 	maxs = []
-		# 	print 'Grads info:'
-		# 	for w in grads:
-		# 		norms.append(np.abs(w[0]).mean())
-		# 		maxs.append(np.abs(w[0]).max())
-		# 	print 'grads norms: ' + str(norms)
-		# 	print 'grads maxs:' + str(maxs)
 
 	def save(self, path, tag=None):
 		if not tag:
