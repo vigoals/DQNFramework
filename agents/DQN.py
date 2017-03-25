@@ -138,15 +138,6 @@ class DQN(BaseAgent):
 
 		return action, q
 
-	# def trainerRun(self, state, targets, action):
-	# 	deltas, _ = self.sess.run(
-	# 			(self.optimizer.deltas, self.optimizer.applyGrads),
-	# 			feed_dict={self.QNetwork.input : state,
-	# 			self.optimizer.targetsPH : targets,
-	# 			self.optimizer.actionPH : action})
-	#
-	# 	return np.abs(deltas).mean()
-
 	def computTargets(self, batch):
 		state = batch['state']
 		action = batch['action']
