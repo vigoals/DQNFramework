@@ -4,6 +4,7 @@ from player import Player
 import time
 from evalPlayer import EvalPlayer
 import json
+import comm
 
 class ExplorePlayer(Player):
 	"""用于学习过程探索游戏环境"""
@@ -22,6 +23,11 @@ class ExplorePlayer(Player):
 		self.savePath = opt.get('savePath', './save')
 		self.evalInfo = []
 		self.maxEvalReward = -1
+
+	def reset(self):
+		super(ExplorePlayer, self).reset()
+		if len(self.evalInfo) > 0:
+			self.step = self.evalInfo[-1].step
 
 	def onStartStep(self):
 		ep = 1
@@ -79,7 +85,17 @@ class ExplorePlayer(Player):
 			f.write(str_)
 			f.close()
 		except IOError:
-			pass
+			print 'Error: 保存evalInfo出错。'
+			exit()
+
+	def load(self):
+		self.agent.load(self.savePath)
+		path = self.savePath + '/evalInfo.json'
+
+		try:
+			self.evalInfo = loadJsonFromFile(path)
+		except IOError:
+			self.evalInfo = []
 
 	def onEndStep(self):
 		if self.step%self.reportFreq == self.reportFreq - 1:

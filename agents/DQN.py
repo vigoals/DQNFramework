@@ -8,13 +8,13 @@ from baseAgent import BaseAgent
 import numpy as np
 
 class DQN(BaseAgent):
-	def __init__(self, opt):
+	def __init__(self, opt, sess=None, buildNet=True):
 		super(DQN, self).__init__(opt)
 		# GPU 不会全部占用
 		config = tf.ConfigProto()
 		# config.log_device_placement = True
 		config.gpu_options.allow_growth = True
-		self.sess = tf.Session(config=config)
+		self.sess = sess if sess is not None else tf.Session(config=config)
 		self.device = opt.get('device')
 		self.stateDim = opt.get('stateDim')
 		self.stateLow = np.array(opt.get('stateLow'))
@@ -44,33 +44,34 @@ class DQN(BaseAgent):
 		self.gameBuf = Buf(opt)
 		self.step = None
 
-		with tf.device(self.device):
-			self.QNetwork = DQNNetwork(self.stateDim,
-					self.nActions,
-					convLayers=self.convLayers,
-					convShape=self.convShape,
-					linearLayers=self.linearLayers,
-					dueling=self.dueling,
-					sess=self.sess, name='QNetwork')
+		if buildNet:
+			with tf.device(self.device):
+				self.QNetwork = DQNNetwork(self.stateDim,
+						self.nActions,
+						convLayers=self.convLayers,
+						convShape=self.convShape,
+						linearLayers=self.linearLayers,
+						dueling=self.dueling,
+						sess=self.sess, name='QNetwork')
 
-			if self.targetFreq > 0:
-				self.QTarget = DQNNetwork(self.stateDim,
-					self.nActions,
-					convLayers=self.convLayers,
-					convShape=self.convShape,
-					linearLayers=self.linearLayers,
-					dueling=self.dueling,
-					sess=self.sess, name='QTarget')
-			else:
-				self.QTarget = self.QNetwork
+				if self.targetFreq > 0:
+					self.QTarget = DQNNetwork(self.stateDim,
+						self.nActions,
+						convLayers=self.convLayers,
+						convShape=self.convShape,
+						linearLayers=self.linearLayers,
+						dueling=self.dueling,
+						sess=self.sess, name='QTarget')
+				else:
+					self.QTarget = self.QNetwork
 
-			self.optimizer = DQNOptimizer(self.QNetwork, self.learningRate,
-					self.nActions, self.clipDelta)
+				self.optimizer = DQNOptimizer(self.QNetwork, self.learningRate,
+						self.nActions, self.clipDelta)
 
-			self.sess.run(tf.global_variables_initializer())
-			self.updateTarget()
+				self.sess.run(tf.global_variables_initializer())
+				self.updateTarget()
 
-		self.saver = tf.train.Saver(self.QNetwork.paras)
+			self.saver = tf.train.Saver(self.QNetwork.paras)
 
 	def updateTarget(self):
 		paras = self.QNetwork.getParas()
@@ -127,7 +128,8 @@ class DQN(BaseAgent):
 			# train
 			if step > self.learnStart \
 					and self.trainFreq > 0 \
-					and step%self.trainFreq == self.trainFreq - 1:
+					and step%self.trainFreq == self.trainFreq - 1
+					and len(self.gameBuf) > self.batchSize:
 				self.train()
 
 			# update target
@@ -168,7 +170,7 @@ class DQN(BaseAgent):
 		batch = self.gameBuf.sample(self.evalBatchSize)
 		state, targets, action = self.computTargets(batch)
 
-		deltas, q, grads = self.optimizer.getInfo(state, targets, action)
+		deltas, q, grads, ms, m = self.optimizer.getInfo(state, targets, action)
 
 		print 'TD:%10.6f' % np.abs(deltas).mean()
 		print 'deltas mean:%10.6f' % deltas.mean()

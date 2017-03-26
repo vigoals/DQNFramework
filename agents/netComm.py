@@ -224,6 +224,8 @@ class DQNOptimizer(object):
 			nActions, clipDelta=None, name='optimizer'):
 		self.net = net
 		self.sess = net.sess
+		self.ms = []
+		self.m = []
 
 		with tf.variable_scope(name):
 			self.targetsPH = tf.placeholder(tf.float32, [None], name='targetsPH')
@@ -250,6 +252,13 @@ class DQNOptimizer(object):
 			self.grads = self.optim.compute_gradients(self.loss, net.paras)
 			self.applyGrads = self.optim.apply_gradients(self.grads)
 
+			for p in net.paras:
+				ms = self.optim.get_slot(p, 'rms')
+				m = self.optim.get_slot(p, 'm')
+				self.ms.append(ms)
+				if m is not None:
+					self.m.append(m)
+
 	def train(self, state, targets, action):
 		self.sess.run(self.applyGrads,
 				feed_dict={self.net.input : state,
@@ -257,9 +266,11 @@ class DQNOptimizer(object):
 				self.actionPH : action})
 
 	def getInfo(self, state, targets, action):
-		deltas, q, grads = self.sess.run((self.deltas,
+		deltas, q, grads, ms, m = self.sess.run((self.deltas,
 				self.net.output,
-				self.grads),
+				self.grads,
+				self.ms,
+				self.m),
 				feed_dict={})
 
-		return deltas, q, grads
+		return deltas, q, grads, ms, m

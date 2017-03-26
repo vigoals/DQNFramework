@@ -67,8 +67,6 @@ class Player(object):
 		assert (maxSteps is not  None) or (maxEpisode is not None), \
 				"游戏无法结束"
 
-		self.reset(training)
-
 		self.onStartRun()
 
 		while True:
@@ -121,3 +119,9 @@ class Player(object):
 			'avgReward' : float(self.totalReward)/self.episode,
 			'runStep' : self.step
 		}
+
+	def save(self):
+		pass
+
+	def load(self):
+		pass

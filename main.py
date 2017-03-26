@@ -12,12 +12,16 @@ import time
 if __name__ == '__main__':
 	opt = OptionParser()
 	savePath = opt.get('savePath', './save')
-	try:
-		os.makedirs(savePath)
-	except OSError:
-		pass
-
 	player = players.ExplorePlayer(opt)
+
+	if os.path.exists(savePath):
+		player.load(savePath)
+	else:
+		try:
+			os.makedirs(savePath)
+		except OSError:
+			pass
+
 	print "Start at %s" % time.asctime()
 	print str(opt)
 	opt.save(savePath)
