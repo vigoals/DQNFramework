@@ -67,6 +67,9 @@ class Player(object):
 		assert (maxSteps is not  None) or (maxEpisode is not None), \
 				"游戏无法结束"
 
+		self.reset(training)
+
+		print 'Start run with step %10d.' % self.step
 		self.onStartRun()
 
 		while True:

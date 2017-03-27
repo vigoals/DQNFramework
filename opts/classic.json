@@ -17,7 +17,7 @@
 	"clipDelta" : 1,
 	"learningRate" : 0.001,
 	"trainFreq" : 1,
-	"batchSize" : 3,
+	"batchSize" : 10,
 	"evalBatchSize" : 100,
 	"targetFreq" : 1000,
 	"reportFreq" : 1000,

@@ -128,7 +128,7 @@ class DQN(BaseAgent):
 			# train
 			if step > self.learnStart \
 					and self.trainFreq > 0 \
-					and step%self.trainFreq == self.trainFreq - 1
+					and step%self.trainFreq == self.trainFreq - 1 \
 					and len(self.gameBuf) > self.batchSize:
 				self.train()
 

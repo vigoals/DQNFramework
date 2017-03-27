@@ -15,7 +15,7 @@ if __name__ == '__main__':
 	player = players.ExplorePlayer(opt)
 
 	if os.path.exists(savePath):
-		player.load(savePath)
+		player.load()
 	else:
 		try:
 			os.makedirs(savePath)
@@ -25,4 +25,5 @@ if __name__ == '__main__':
 	print "Start at %s" % time.asctime()
 	print str(opt)
 	opt.save(savePath)
+	player.save()
 	player.run(opt.get('steps'))

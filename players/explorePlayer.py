@@ -4,11 +4,12 @@ from player import Player
 import time
 from evalPlayer import EvalPlayer
 import json
-import comm
+from comm import loadJsonFromFile
 
 class ExplorePlayer(Player):
 	"""用于学习过程探索游戏环境"""
 	def __init__(self, opt, agent=None):
+		self.evalInfo = []
 		super(ExplorePlayer, self).__init__(opt, agent)
 		self.reportFreq = opt.get('reportFreq', 10000)
 		self.learnStart = opt.get('learnStart', 50000)
@@ -21,13 +22,12 @@ class ExplorePlayer(Player):
 		self.evalPlayer = EvalPlayer(opt, self.agent)
 		self.saveFreq = opt.get('saveFreq', 10000)
 		self.savePath = opt.get('savePath', './save')
-		self.evalInfo = []
 		self.maxEvalReward = -1
 
-	def reset(self):
-		super(ExplorePlayer, self).reset()
+	def reset(self, training=False):
+		super(ExplorePlayer, self).reset(training)
 		if len(self.evalInfo) > 0:
-			self.step = self.evalInfo[-1].step
+			self.step = self.evalInfo[-1]['step'] + 1
 
 	def onStartStep(self):
 		ep = 1

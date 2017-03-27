@@ -37,8 +37,9 @@ class BaseBuf(object):
 		tmp['action'] = action
 
 	def setReward(self, reward):
-		tmp = self.buf[-1]
-		tmp['reward'] = reward
+		if len(self) > 0:
+			tmp = self.buf[-1]
+			tmp['reward'] = reward
 
 	def getState(self, i=None):
 		i = i if i is not None else -1

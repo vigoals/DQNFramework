@@ -271,6 +271,8 @@ class DQNOptimizer(object):
 				self.grads,
 				self.ms,
 				self.m),
-				feed_dict={})
+				feed_dict={self.net.input : state,
+				self.targetsPH : targets,
+				self.actionPH : action})
 
 		return deltas, q, grads, ms, m
