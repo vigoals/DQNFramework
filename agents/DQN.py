@@ -6,6 +6,7 @@ import tensorflow as tf
 from netComm import *
 from baseAgent import BaseAgent
 import numpy as np
+import os
 
 class DQN(BaseAgent):
 	def __init__(self, opt, sess=None, buildNet=True):
@@ -39,9 +40,9 @@ class DQN(BaseAgent):
 		self.maxScale = opt.get('maxScale', 10)
 
 		tmp = opt.get('buf').split('.')
-		str_ = 'Buf = ' + opt.get('buf') + '(opt)'
-		exec('import ' + tmp[0] + ';' + str_)
-		self.gameBuf = Buf
+		exec('import ' + tmp[0])
+		exec('Buf = ' + opt.get('buf'))
+		self.gameBuf = Buf(opt)
 		self.step = None
 
 		if buildNet:
@@ -128,8 +129,7 @@ class DQN(BaseAgent):
 			# train
 			if step > self.learnStart \
 					and self.trainFreq > 0 \
-					and step%self.trainFreq == self.trainFreq - 1 \
-					and len(self.gameBuf) > self.batchSize:
+					and step%self.trainFreq == self.trainFreq - 1:
 				self.train()
 
 			# update target
@@ -215,5 +215,7 @@ class DQN(BaseAgent):
 		else:
 			path = path + '/agent-' + tag
 
-		self.saver.restore(self.sess, path)
+		if os.path.exists(path + '.index'):
+			self.saver.restore(self.sess, path)
+			print 'Agent load %s.' % path
 		self.updateTarget()

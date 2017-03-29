@@ -55,7 +55,8 @@ class BaseBuf(object):
 	def get(self, i=None):
 		i = i if i is not None else -1
 		i = i if i >= 0 else (len(self.buf) + i)
-		assert 0 <= i < len(self.buf), '超出范围'
+		assert 0 <= i < len(self.buf), \
+				'i = %d 超出范围 len=%d' % (i, len(self.buf))
 		return self.buf[i]['step'], self.getState(i), self.buf[i]['action'], \
 				self.buf[i]['reward'], self.buf[i]['terminal']
 
@@ -65,6 +66,9 @@ class BaseBuf(object):
 		return self.get(i)
 
 	def sample(self, n):
+		randomMax = len(self.buf) - 1
+		if randomMax <= 0:
+			return None
 		i = 0
 		steps = []
 		state = []
@@ -74,7 +78,7 @@ class BaseBuf(object):
 		stateNext = []
 
 		while i < n:
-			k = np.random.randint(len(self.buf) - 1)
+			k = np.random.randint(randomMax)
 			if not self.buf[k]['terminal']:
 				step, s1, a, r, _= self.get(k)
 				_, s2, _, _, t = self.get(k + 1)
