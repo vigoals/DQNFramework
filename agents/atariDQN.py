@@ -16,6 +16,8 @@ class AtariDQN(DQN):
 
 		super(AtariDQN, self).__init__(opt)
 
+		tmp = opt.get('buf').split('.')
+		exec('import ' + tmp[0])
 		exec('Buf = ' + opt.get('buf'))
 		self.evalBuf = Buf(opt)
 		self.evalBuf.reset(self.histLen*2)

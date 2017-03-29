@@ -39,9 +39,9 @@ class DQN(BaseAgent):
 		self.maxScale = opt.get('maxScale', 10)
 
 		tmp = opt.get('buf').split('.')
-		exec('import ' + tmp[0])
-		exec('Buf = ' + opt.get('buf'))
-		self.gameBuf = Buf(opt)
+		str_ = 'Buf = ' + opt.get('buf') + '(opt)'
+		exec('import ' + tmp[0] + ';' + str_)
+		self.gameBuf = Buf
 		self.step = None
 
 		if buildNet:
@@ -162,12 +162,16 @@ class DQN(BaseAgent):
 
 	def train(self):
 		batch = self.gameBuf.sample(self.batchSize)
+		if batch is None:
+			return
 		state, targets, action = self.computTargets(batch)
 		# self.trainerRun(state, targets, action)
 		self.optimizer.train(state, targets, action)
 
 	def report(self):
 		batch = self.gameBuf.sample(self.evalBatchSize)
+		if batch is None:
+			return
 		state, targets, action = self.computTargets(batch)
 
 		deltas, q, grads, ms, m = self.optimizer.getInfo(state, targets, action)
