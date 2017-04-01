@@ -5,7 +5,7 @@ import numpy as np
 import gameBuf
 
 class AtariDQN(DQN):
-	def __init__(self, opt):
+	def __init__(self, opt, sess=None, buildNet=True):
 		self.histLen = opt.get('histLen', 4)
 		self.height = opt.get('height', 84)
 		self.width = opt.get('width', 84)
@@ -14,7 +14,7 @@ class AtariDQN(DQN):
 		opt.set('convShape', self.convShape)
 		opt.set('stateDim', self.stateDim)
 
-		super(AtariDQN, self).__init__(opt)
+		super(AtariDQN, self).__init__(opt, sess, buildNet)
 
 		tmp = opt.get('buf').split('.')
 		exec('import ' + tmp[0])
