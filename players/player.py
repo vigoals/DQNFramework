@@ -41,7 +41,16 @@ class Player(object):
 		self.step = 0
 		self.episode = 0
 		self.action = 0
+
+		# 用于统计
+		self.countEpisode = 0
 		self.totalReward = 0
+		self.minReward = 1e100
+		self.maxReward = -1
+		self.numReward = 0
+		self.numPositiveR = 0
+		self.numNegativeR = 0
+
 		self.observation, self.reward, self.terminal = self.gameEnv.newGame()
 		self.episodeReward = self.reward
 		self.training = training
@@ -69,7 +78,6 @@ class Player(object):
 
 		self.reset(training)
 
-		print 'Start run with step %10d.' % self.step
 		self.onStartRun()
 
 		while True:
@@ -79,13 +87,23 @@ class Player(object):
 
 			self.oneStep(training)
 
+			if self.reward != 0:
+				self.numReward += 1
+			if self.reward > 0:
+				self.numPositiveR += 1
+			if self.reward < 0:
+				self.numNegativeR += 1
+
 			if not self.terminal:
 				self.episodeReward += self.reward
 			else:
 				self.totalReward += self.episodeReward
 				self.episode += 1
+				self.countEpisode += 1
 				self.onEndEpisode()
-				self.episodeReward = 0
+				self.maxReward = max(self.maxReward, self.episodeReward)
+				self.minReward = min(self.minReward, self.episodeReward)
+				self.episodeReward = self.reward
 
 			self.onEndStep()
 

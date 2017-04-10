@@ -10,6 +10,7 @@ class ExplorePlayer(Player):
 	"""用于学习过程探索游戏环境"""
 	def __init__(self, opt, agent=None):
 		self.evalInfo = []
+		self.exploreInfo = []
 		super(ExplorePlayer, self).__init__(opt, agent)
 		self.reportFreq = opt.get('reportFreq', 10000)
 		self.learnStart = opt.get('learnStart', 50000)
@@ -28,6 +29,23 @@ class ExplorePlayer(Player):
 		super(ExplorePlayer, self).reset(training)
 		if len(self.evalInfo) > 0:
 			self.step = self.evalInfo[-1]['step'] + 1
+
+		if len(self.exploreInfo) > 0:
+			step = self.exploreInfo[-1]['step'] + 1
+			self.step = max(step, self.step)
+
+	def resetCount(self):
+		self.countEpisode = 0
+		self.episode = 0
+		self.totalReward = 0
+		self.minReward = 1e100
+		self.maxReward = -1
+		self.numReward = 0
+		self.numPositiveR = 0
+		self.numNegativeR = 0
+
+	def onStartRun(self):
+		print 'Start run with step %10d.' % self.step
 
 	def onStartStep(self):
 		ep = 1
@@ -49,7 +67,29 @@ class ExplorePlayer(Player):
 		print "Report in step %8d" % self.step
 		t = int(time.time() - self.startTime)
 		print "Run time:%10d" % t
+		print "Reward Info: episode:%5d avg:%.5f max:%6d min:%6d " \
+				"num:%5d num+:%5d num-:%5d" % \
+				(self.countEpisode,
+				self.totalReward/self.countEpisode,
+				self.maxReward, self.minReward,
+				self.numReward, self.numPositiveR, self.numNegativeR)
 		self.agent.report()
+
+		info = {
+			"step" : self.step,
+			"avgReward" : self.totalReward/self.countEpisode \
+				if self.countEpisode != 0 else self.totalReward,
+			"countEpisode" : self.countEpisode,
+			"maxReward" : self.maxReward,
+			"minReward" : self.minReward,
+			"numReward" : self.numReward,
+			"numPositiveR" : self.numPositiveR,
+			"numNegativeR" : self.numNegativeR
+		}
+
+		self.exploreInfo.append(info)
+
+		self.resetCount()
 
 	def eval(self):
 		print
@@ -88,14 +128,31 @@ class ExplorePlayer(Player):
 			print 'Error: 保存evalInfo出错。'
 			exit()
 
+		path = self.savePath + '/exploreInfo.json'
+		try:
+			str_ = json.dumps(self.exploreInfo, indent=4,
+					sort_keys=False, ensure_ascii=False)
+			f = open(path, 'w')
+			f.write(str_)
+			f.close()
+		except IOError:
+			print 'Error: 保存exploreInfo出错。'
+			exit()
+
 	def load(self):
 		self.agent.load(self.savePath)
-		path = self.savePath + '/evalInfo.json'
 
+		path = self.savePath + '/evalInfo.json'
 		try:
 			self.evalInfo = loadJsonFromFile(path)
 		except IOError:
 			self.evalInfo = []
+
+		path = self.savePath + '/exploreInfo.json'
+		try:
+			self.exploreInfo = loadJsonFromFile(path)
+		except IOError:
+			self.exploreInfo = []
 
 	def onEndStep(self):
 		if self.step%self.reportFreq == self.reportFreq - 1:
