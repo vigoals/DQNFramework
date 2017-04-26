@@ -65,6 +65,14 @@ class BaseBuf(object):
 		assert self.buf[i]['step'] == step, 'step 计数出错'
 		return self.get(i)
 
+	def indexToStep(self, i):
+		step = i + self.buf[0]['step']
+		return step
+
+	def stepToIndex(self, step):
+		i = step - self.buf[0]['step']
+		return i
+
 	def sample(self, n):
 		randomMax = len(self.buf) - 1
 		if randomMax <= 0:
