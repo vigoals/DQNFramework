@@ -27,3 +27,6 @@ if __name__ == '__main__':
 	opt.save(savePath)
 	player.save()
 	player.run(opt.get('steps'))
+
+	print
+	print "Done!!!"
