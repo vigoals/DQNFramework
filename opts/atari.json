@@ -18,7 +18,7 @@
 	"histLen" : 4,
 	"height" : 84,
 	"width" : 84,
-	"steps" : 5000000,
+	"steps" : 50000000,
 	"epsEnd" : 0.1,
 	"epsEndT" : 1e6,
 	"epsTest" : 0.05,

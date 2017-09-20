@@ -2,3 +2,5 @@
 save/
 save*/
 remoteRun.sh
+.idea/
+__pycache__/
